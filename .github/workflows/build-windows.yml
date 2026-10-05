@@ -1,0 +1,72 @@
+name: Build Buai Music Mixer installer (Windows x64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt 5.15.2 (MSVC 2019 x64)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build VSTChecker
+        shell: cmd
+        run: |
+          mkdir build-vstchecker
+          cd build-vstchecker
+          qmake ..\3rdParty\VSTChecker\VSTChecker.pro CONFIG+=release
+          nmake
+
+      - name: Build Buai Music Mixer
+        shell: cmd
+        run: |
+          mkdir build-mixer
+          cd build-mixer
+          qmake ..\BuaiMusicMixer.pro CONFIG+=release
+          nmake
+
+      - name: Compile translations
+        shell: cmd
+        run: lrelease languages\en.ts -qm languages\en.qm
+
+      - name: Collect files (windeployqt + BASS)
+        shell: pwsh
+        run: |
+          $d = "deploy\x64"
+          New-Item -ItemType Directory -Force $d | Out-Null
+          Copy-Item build-mixer\release\BuaiMusicMixer.exe $d
+          Copy-Item (Get-ChildItem -Recurse build-vstchecker -Filter VSTChecker_x64.exe | Select-Object -First 1).FullName $d
+          foreach ($f in @("BASS\bass24\x64\bass.dll","BASS\bass_fx24\x64\bass_fx.dll","BASS\bass_vst24\x64\bass_vst.dll","BASS\bassmidi24\x64\bassmidi.dll","BASS\bassmix24\x64\bassmix.dll")) {
+            Copy-Item $f $d
+          }
+          New-Item -ItemType Directory -Force "$d\languages" | Out-Null
+          Copy-Item languages\en.qm "$d\languages"
+          windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw "$d\BuaiMusicMixer.exe"
+          Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile deploy\VC_redist.x64.exe
+
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.0.0" "_iss_setup\buai-mixer-x64.iss"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BuaiMusicMixer-setup-x64
+          path: dist\*.exe

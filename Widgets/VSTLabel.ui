@@ -31,10 +31,6 @@
   <property name="styleSheet">
    <string notr="true">#frame {
 	border: 1px solid rgb(0, 170, 255);
-}
-
-#label {
-	color: rgb(241, 241, 241);
 }</string>
   </property>
   <property name="locale">

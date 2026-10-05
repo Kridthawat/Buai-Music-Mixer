@@ -3,6 +3,7 @@
 
 #include <QTime>
 #include <QMenu>
+#include <QActionGroup>
 #include <QCloseEvent>
 #include <QMessageBox>
 #include <QDir>
@@ -11,6 +12,7 @@
 #include <QWindow>
 
 #include "Config.h"
+#include "Theme.h"
 #include "Utils.h"
 #include "MedleyLoader.h"
 #include "DrumPadsKey.h"
@@ -1506,6 +1508,28 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
         act->setCheckable(true);
         act->setChecked(currentLang == "en");
         connect(act, SIGNAL(triggered()), this, SLOT(setEngLang()));
+
+        menu.addSeparator();
+    }
+
+    { // theme menu
+        QMenu *m = menu.addMenu(tr("ธีม / Theme"));
+        QActionGroup *grp = new QActionGroup(m);
+        QAction *aSys   = m->addAction(tr("ตามธีม Windows"));
+        QAction *aDark  = m->addAction(tr("มืด (Dark)"));
+        QAction *aLight = m->addAction(tr("สว่าง (Light)"));
+        QList<QAction*> acts;
+        acts << aSys << aDark << aLight;
+        for (int i = 0; i < acts.count(); i++) {
+            acts[i]->setCheckable(true);
+            grp->addAction(acts[i]);
+        }
+        aSys->setChecked(Theme::mode() == Theme::System);
+        aDark->setChecked(Theme::mode() == Theme::Dark);
+        aLight->setChecked(Theme::mode() == Theme::Light);
+        connect(aSys,   &QAction::triggered, this, []() { Theme::setMode(Theme::System); });
+        connect(aDark,  &QAction::triggered, this, []() { Theme::setMode(Theme::Dark); });
+        connect(aLight, &QAction::triggered, this, []() { Theme::setMode(Theme::Light); });
 
         menu.addSeparator();
     }

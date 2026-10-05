@@ -12,13 +12,13 @@
 #include "version.h"
 #include "Config.h"
 #include "Utils.h"
+#include "Theme.h"
 
 #ifdef __linux__
 #include <QFontDatabase>
 #endif
 
 void registerMetaType();
-void applyDarkTheme(QApplication &app);
 
 void checkDatabase(QSplashScreen *splash, SongDatabase *db);
 void loadSoundfonts(QSplashScreen *splash, MidiSynthesizer *synth);
@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
             dir.mkpath(Config::CONFIG_DIR_PATH);
     }
 
-    // Modern dark theme
-    applyDarkTheme(a);
+    // Color theme (follow Windows / dark / light)
+    Theme::init(a);
 
 
     // Add font for linux
@@ -100,79 +100,6 @@ int main(int argc, char *argv[])
     return a.exec();
 }
 
-
-void applyDarkTheme(QApplication &app)
-{
-    app.setStyle(QStyleFactory::create("Fusion"));
-
-    const QColor window("#101114"), base("#17181c"), alt("#1d1f24"), button("#23252c");
-    const QColor text("#e8eaed"), dim("#6b7080"), accent("#8b5cf6"), link("#22d3ee");
-
-    QPalette p;
-    p.setColor(QPalette::Window, window);
-    p.setColor(QPalette::WindowText, text);
-    p.setColor(QPalette::Base, base);
-    p.setColor(QPalette::AlternateBase, alt);
-    p.setColor(QPalette::ToolTipBase, button);
-    p.setColor(QPalette::ToolTipText, text);
-    p.setColor(QPalette::Text, text);
-    p.setColor(QPalette::Button, button);
-    p.setColor(QPalette::ButtonText, text);
-    p.setColor(QPalette::BrightText, QColor("#ffffff"));
-    p.setColor(QPalette::Link, link);
-    p.setColor(QPalette::Highlight, accent);
-    p.setColor(QPalette::HighlightedText, QColor("#ffffff"));
-    p.setColor(QPalette::Light, QColor("#30333b"));
-    p.setColor(QPalette::Midlight, QColor("#2a2d35"));
-    p.setColor(QPalette::Mid, QColor("#4a4e5a"));
-    p.setColor(QPalette::Dark, QColor("#0b0b0d"));
-    p.setColor(QPalette::Shadow, QColor("#6b7080"));
-    p.setColor(QPalette::Disabled, QPalette::Text, dim);
-    p.setColor(QPalette::Disabled, QPalette::WindowText, dim);
-    p.setColor(QPalette::Disabled, QPalette::ButtonText, dim);
-    app.setPalette(p);
-
-    app.setStyleSheet(
-        "QToolTip { background-color: #23252c; color: #e8eaed; border: 1px solid #3a3d46; padding: 4px; }"
-        "QMenu { background-color: #17181c; color: #e8eaed; border: 1px solid #2a2d35; padding: 6px; }"
-        "QMenu::item { padding: 7px 28px 7px 22px; border-radius: 5px; }"
-        "QMenu::item:selected { background-color: #8b5cf6; color: #ffffff; }"
-        "QMenu::item:disabled { color: #6b7080; }"
-        "QMenu::separator { height: 1px; background: #2a2d35; margin: 5px 8px; }"
-        "QPushButton { background-color: #23252c; color: #e8eaed; border: 1px solid #3a3d46; border-radius: 6px; }"
-        "QPushButton:hover { background-color: #2e3139; border-color: #8b5cf6; }"
-        "QPushButton:pressed { background-color: #8b5cf6; }"
-        "QPushButton:checked { background-color: #8b5cf6; color: #ffffff; border-color: #a78bfa; }"
-        "QPushButton:disabled { color: #6b7080; background-color: #1a1b20; }"
-        "QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox { background-color: #17181c; color: #e8eaed;"
-        "  border: 1px solid #3a3d46; border-radius: 6px; padding: 3px 6px; selection-background-color: #8b5cf6; }"
-        "QLineEdit:focus, QSpinBox:focus, QComboBox:focus { border-color: #8b5cf6; }"
-        "QComboBox QAbstractItemView { background-color: #17181c; color: #e8eaed; selection-background-color: #8b5cf6; border: 1px solid #3a3d46; }"
-        "QGroupBox { border: 1px solid #2a2d35; border-radius: 8px; margin-top: 10px; padding-top: 8px; }"
-        "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; color: #22d3ee; }"
-        "QTabWidget::pane { border: 1px solid #2a2d35; border-radius: 6px; }"
-        "QTabBar::tab { background: #17181c; color: #9aa0ae; padding: 7px 16px; border: 1px solid #2a2d35; border-bottom: none;"
-        "  border-top-left-radius: 6px; border-top-right-radius: 6px; margin-right: 2px; }"
-        "QTabBar::tab:selected { background: #23252c; color: #ffffff; border-color: #8b5cf6; }"
-        "QTabBar::tab:hover { color: #ffffff; }"
-        "QListWidget, QTreeWidget, QTableWidget, QListView, QTableView { background-color: #17181c; color: #e8eaed;"
-        "  border: 1px solid #2a2d35; border-radius: 6px; alternate-background-color: #1d1f24; }"
-        "QHeaderView::section { background-color: #23252c; color: #e8eaed; border: none; padding: 5px; }"
-        "QSplitter::handle { background-color: #2a2d35; }"
-        "QScrollBar:horizontal { background: #17181c; height: 12px; margin: 0; border: none; }"
-        "QScrollBar::handle:horizontal { background: #3a3d46; border-radius: 5px; min-width: 30px; }"
-        "QScrollBar::handle:horizontal:hover { background: #8b5cf6; }"
-        "QScrollBar:vertical { background: #17181c; width: 12px; margin: 0; border: none; }"
-        "QScrollBar::handle:vertical { background: #3a3d46; border-radius: 5px; min-height: 30px; }"
-        "QScrollBar::handle:vertical:hover { background: #8b5cf6; }"
-        "QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; background: none; border: none; }"
-        "QScrollBar::add-page, QScrollBar::sub-page { background: none; }"
-        "QSlider::groove:horizontal { height: 4px; background: #2a2d35; border-radius: 2px; }"
-        "QSlider::sub-page:horizontal { background: #8b5cf6; border-radius: 2px; }"
-        "QSlider::handle:horizontal { background: #f4f5fa; width: 14px; margin: -6px 0; border-radius: 7px; }"
-        "QCheckBox, QRadioButton { spacing: 8px; }"
-    );
-}
 
 void registerMetaType()
 {

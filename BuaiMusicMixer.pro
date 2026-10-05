@@ -15,6 +15,7 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     Config.cpp \
+    Theme.cpp \
     Dialogs/MedleyDialog.cpp \
         MainWindow.cpp \
     MedleyLoader.cpp \
@@ -147,6 +148,7 @@ HEADERS  += MainWindow.h \
     FXDialogs/DistortionFXDialog.h \
     FXDialogs/EchoFXDialog.h \
     Config.h \
+    Theme.h \
     Widgets/PlaylistWidget.h \
     Dialogs/DialogHelper.h \
     Dialogs/SpeakerDialog.h \

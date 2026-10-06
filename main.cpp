@@ -14,6 +14,7 @@
 #include "Config.h"
 #include "Utils.h"
 #include "Theme.h"
+#include "Widgets/DialogSkin.h"
 
 #ifdef __linux__
 #include <QFontDatabase>
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
 
     // Color theme (follow Windows / dark / light)
     Theme::init(a);
+    a.installEventFilter(new DialogSkin(&a));
 
 
     // Add font for linux

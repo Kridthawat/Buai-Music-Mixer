@@ -50,6 +50,7 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
     signalBusActionMapper(this)
 {
     ui->setupUi(this);
+    setProperty("buaiNoSkin", true);   // has its own title bar
 
     // Frameless window with our own themed neon title bar
     ui->verticalLayout_60->setContentsMargins(6, 6, 6, 6);

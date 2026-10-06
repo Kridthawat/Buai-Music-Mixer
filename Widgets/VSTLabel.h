@@ -3,6 +3,8 @@
 
 #include <QWidget>
 
+class QGraphicsDropShadowEffect;
+
 namespace Ui {
 class VSTLabel;
 }
@@ -26,6 +28,7 @@ signals:
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
+    void changeEvent(QEvent *event);
 
 private slots:
     void on_btn_clicked();
@@ -33,6 +36,12 @@ private slots:
 
 private:
     Ui::VSTLabel *ui;
+    void applyNeon();
+    void updateBtnStyle();
+
+    QString neonKey;
+    QGraphicsDropShadowEffect *btnGlow = nullptr;
+    QGraphicsDropShadowEffect *frameGlow = nullptr;
     bool fxBypass = false;
     int fxIndex = 0;
 };

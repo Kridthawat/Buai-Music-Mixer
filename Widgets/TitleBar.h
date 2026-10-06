@@ -126,6 +126,8 @@ public:
         refresh();
     }
 
+    void setTitle(const QString &t) { titleLabel->setText(t); }
+
 protected:
     bool isDarkTheme() const { return palette().color(QPalette::Window).lightness() < 128; }
     QColor neon() const { return palette().color(QPalette::Link); }
@@ -207,6 +209,27 @@ private:
     QLabel *titleLabel;
     QGraphicsDropShadowEffect *glow;
     QVariantAnimation *pulse;
+};
+
+// Transparent overlay that draws a thin neon outline around a frameless window.
+class FrameOverlay : public QWidget
+{
+public:
+    explicit FrameOverlay(QWidget *parent) : QWidget(parent)
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter p(this);
+        QColor c = palette().color(QPalette::Link);
+        c.setAlpha(130);
+        p.setPen(QPen(c, 1));
+        p.drawRect(rect().adjusted(0, 0, -1, -1));
+    }
 };
 
 #endif // TITLEBAR_H

@@ -25,6 +25,7 @@ signals:
 protected:
     void showEvent(QShowEvent *);
     void closeEvent(QCloseEvent *);
+    void hideEvent(QHideEvent *);
 
 private slots:
     void connectDialAndSpin();

@@ -44,6 +44,12 @@ void Chorus2Dialog::showEvent(QShowEvent *)
     openned = true;
 }
 
+void Chorus2Dialog::hideEvent(QHideEvent *)
+{
+    // also reached through reject()/Esc/title-bar close, which do not send closeEvent
+    openned = false;
+}
+
 void Chorus2Dialog::closeEvent(QCloseEvent *)
 {
     openned = false;

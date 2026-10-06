@@ -57,6 +57,12 @@ void Equalizer31BandDialog::showEvent(QShowEvent *)
     openned = true;
 }
 
+void Equalizer31BandDialog::hideEvent(QHideEvent *)
+{
+    // also reached through reject()/Esc/title-bar close, which do not send closeEvent
+    openned = false;
+}
+
 void Equalizer31BandDialog::closeEvent(QCloseEvent *)
 {
     openned = false;

@@ -50,6 +50,12 @@ void ReverbDialog::showEvent(QShowEvent *)
     openned = true;
 }
 
+void ReverbDialog::hideEvent(QHideEvent *)
+{
+    // also reached through reject()/Esc/title-bar close, which do not send closeEvent
+    openned = false;
+}
+
 void ReverbDialog::closeEvent(QCloseEvent *)
 {
     openned = false;

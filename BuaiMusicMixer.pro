@@ -123,6 +123,7 @@ HEADERS  += MainWindow.h \
     Utils.h \
     Widgets/PlaybackButton.h \
     Widgets/FaderSlider.h \
+    Widgets/TitleBar.h \
     Widgets/VSTLabel.h \
     Midi/HNKFile.h \
     BASSFX/FX.h \

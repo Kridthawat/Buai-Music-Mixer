@@ -75,6 +75,9 @@ protected:
     void showEvent(QShowEvent *);
     void hideEvent(QHideEvent *event);
     void closeEvent(QCloseEvent *event);
+    void paintEvent(QPaintEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent *event);
     void reject();
 
 private:
@@ -99,6 +102,8 @@ private:
 
     bool staysOnTop = false;
     bool skipSave = false;
+    class TitleBar *titleBar = nullptr;
+    Qt::Edges edgesAt(const QPoint &pos) const;
     class QSlider *masterSlider = nullptr;
     class QLabel  *masterValue  = nullptr;
 

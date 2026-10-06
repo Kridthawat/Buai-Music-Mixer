@@ -160,9 +160,9 @@ void applyColors(bool dark)
     p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(c.dim));
     p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(c.dim));
 
+    g_dark = dark;
     qApp->setPalette(p);
     qApp->setStyleSheet(buildStyleSheet(c));
-    g_dark = dark;
 }
 
 void applyCurrent()

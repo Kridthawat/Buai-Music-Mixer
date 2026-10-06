@@ -12,6 +12,9 @@
 #include <QSlider>
 #include <QLabel>
 #include <QHBoxLayout>
+#include <QWindow>
+#include <QPainter>
+#include "Widgets/TitleBar.h"
 
 #include <bass.h>
 
@@ -47,6 +50,14 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
     signalBusActionMapper(this)
 {
     ui->setupUi(this);
+
+    // Frameless window with our own themed neon title bar
+    ui->verticalLayout_60->setContentsMargins(6, 6, 6, 6);
+    titleBar = new TitleBar(tr("Buai Music Mixer"), this);
+    ui->verticalLayout_60->insertWidget(0, titleBar);
+    connect(titleBar->minimizeButton, &QAbstractButton::clicked, this, [this]() { showMinimized(); });
+    connect(titleBar->closeButton, &QAbstractButton::clicked, this, [this]() { close(); });
+    setMouseTracking(true);
 
     // timer
     settingTimer.setInterval(10 * 60000);
@@ -106,8 +117,8 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
         // window parent, stays on top
         staysOnTop = st.value("WindowStaysOnTop", false).toBool();
         {
-            Qt::WindowFlags flags = Qt::Window | Qt::WindowTitleHint | Qt::WindowSystemMenuHint
-                                    | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint;
+            Qt::WindowFlags flags = Qt::Window | Qt::FramelessWindowHint
+                                    | Qt::WindowMinimizeButtonHint | Qt::WindowSystemMenuHint;
             if (staysOnTop)
                 flags |= Qt::WindowStaysOnTopHint;
             this->setParent(0, flags);
@@ -1013,6 +1024,47 @@ void SynthMixerDialog::setStaysOnTop(bool stay)
     this->staysOnTop = stay;
     this->setWindowFlag(Qt::WindowStaysOnTopHint, stay);
     this->show();
+}
+
+Qt::Edges SynthMixerDialog::edgesAt(const QPoint &pos) const
+{
+    Qt::Edges e;
+    const int m = 6;
+    if (pos.x() < m)
+        e |= Qt::LeftEdge;
+    else if (pos.x() >= width() - m)
+        e |= Qt::RightEdge;
+    return e;
+}
+
+void SynthMixerDialog::mouseMoveEvent(QMouseEvent *event)
+{
+    setCursor(edgesAt(event->pos()) ? Qt::SizeHorCursor : Qt::ArrowCursor);
+    QDialog::mouseMoveEvent(event);
+}
+
+void SynthMixerDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        Qt::Edges e = edgesAt(event->pos());
+        if (e && windowHandle()) {
+            windowHandle()->startSystemResize(e);
+            return;
+        }
+    }
+    QDialog::mousePressEvent(event);
+}
+
+void SynthMixerDialog::paintEvent(QPaintEvent *event)
+{
+    QDialog::paintEvent(event);
+
+    // thin neon outline, since the window has no system frame
+    QPainter p(this);
+    QColor c = palette().color(QPalette::Link);
+    c.setAlpha(120);
+    p.setPen(QPen(c, 1));
+    p.drawRect(rect().adjusted(0, 0, -1, -1));
 }
 
 void SynthMixerDialog::closeEvent(QCloseEvent *event)

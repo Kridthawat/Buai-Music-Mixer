@@ -40,11 +40,14 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void resizeEvent(QResizeEvent *event);
     void paintEvent(QPaintEvent *event);
+    void changeEvent(QEvent *event);
 
 private slots:
     void moveHandle();
 
 private:
+    void buildHandle();
+
     QLabel *sHandle;
 
     qreal sTickCount = 20;

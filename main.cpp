@@ -1,4 +1,6 @@
 #include "MainWindow.h"
+#include <QPainterPath>
+#include <QRegion>
 
 #include <QApplication>
 #include <QSplashScreen>
@@ -47,6 +49,11 @@ int main(int argc, char *argv[])
 
     QPixmap *pixmap = new QPixmap(":/Icons/App/splash.png");
     QSplashScreen *splash = new QSplashScreen(*pixmap);
+    {   // rounded splash window
+        QPainterPath sp;
+        sp.addRoundedRect(QRectF(splash->rect()), 14, 14);
+        splash->setMask(QRegion(sp.toFillPolygon().toPolygon()));
+    }
     splash->show();
     qApp->processEvents();
 

@@ -147,9 +147,8 @@ private:
             return;
         if (dlg->property("buaiNoSkin").toBool())
             return;
-        // Qt's own dialogs (QMessageBox, QFileDialog, ...) keep the system look
-        if (QByteArray(dlg->metaObject()->className()).startsWith('Q'))
-            return;
+        // Qt's own dialogs (QMessageBox, QInputDialog, QColorDialog, QFileDialog) get the same skin.
+        // Native file dialogs are not Qt widgets and are left alone.
         if (dlg->windowFlags() & Qt::FramelessWindowHint)
             return;
 

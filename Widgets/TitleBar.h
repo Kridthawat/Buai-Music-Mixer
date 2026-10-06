@@ -16,6 +16,8 @@
 #include <QLinearGradient>
 #include <QPixmap>
 #include <QFont>
+#include <QFontMetrics>
+#include <QTimer>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QWindow>
@@ -129,9 +131,29 @@ public:
         refresh();
     }
 
-    void setTitle(const QString &t) { titleLabel->setText(t); }
+    void setTitle(const QString &t) { titleLabel->setText(t); QTimer::singleShot(0, this, [this]() { fitTitle(); }); }
+
+    // shrink the title font until the whole text fits between the icon and the buttons
+    void fitTitle()
+    {
+        QWidget *right = minimizeButton->isVisible() ? static_cast<QWidget *>(minimizeButton)
+                                                     : static_cast<QWidget *>(closeButton);
+        int avail = right->x() - titleLabel->x() - 8;
+        if (avail < 40)
+            return;
+        QFont f = titleLabel->font();
+        for (int pt = 13; pt >= 7; --pt)
+        {
+            f.setPointSize(pt);
+            f.setLetterSpacing(QFont::AbsoluteSpacing, pt >= 12 ? 1.6 : (pt >= 10 ? 0.8 : 0.0));
+            if (QFontMetrics(f).horizontalAdvance(titleLabel->text()) + 8 <= avail)
+                break;
+        }
+        titleLabel->setFont(f);
+    }
 
 protected:
+    void resizeEvent(QResizeEvent *e) override { QWidget::resizeEvent(e); fitTitle(); }
     bool isDarkTheme() const { return palette().color(QPalette::Window).lightness() < 128; }
     QColor neon() const { return palette().color(QPalette::Link); }
 

@@ -69,7 +69,7 @@ QString buildStyleSheet(const Colors &c)
 {
     QString css =
         "QToolTip { background-color: @btn; color: @text; border: 1px solid @border; padding: 4px; }"
-        "QMenu { background-color: @base; color: @text; border: 1px solid @border2; padding: 6px; }"
+        "QMenu { background-color: @base; color: @text; border: 1px solid @border2; border-radius: 10px; padding: 6px; }"
         "QMenu::item { padding: 7px 28px 7px 22px; border-radius: 5px; }"
         "QMenu::item:selected { background-color: @accent; color: @accentText; }"
         "QMenu::item:disabled { color: @dim; }"

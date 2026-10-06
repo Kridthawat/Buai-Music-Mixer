@@ -7,6 +7,7 @@
 
 #include <QObject>
 #include <QDialog>
+#include <QMenu>
 #include <QApplication>
 #include <QHash>
 #include <QSet>
@@ -38,6 +39,18 @@ protected:
 
         if (!o->isWidgetType())
             return false;
+
+        if (e->type() == QEvent::Polish) {
+            if (QMenu *m = qobject_cast<QMenu *>(o)) {
+                if (m->isWindow() && !m->isVisible() && !m->property("buaiRounded").toBool()) {
+                    m->setProperty("buaiRounded", true);
+                    m->setWindowFlag(Qt::FramelessWindowHint, true);
+                    m->setWindowFlag(Qt::NoDropShadowWindowHint, true);
+                    m->setAttribute(Qt::WA_TranslucentBackground, true);
+                }
+                return false;
+            }
+        }
 
         QDialog *dlg = qobject_cast<QDialog *>(o);
         if (!dlg)

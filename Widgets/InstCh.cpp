@@ -3,6 +3,8 @@
 
 #include "VSTLabel.h"
 #include <QToolTip>
+#include <QLabel>
+#include <QFontMetrics>
 #include <QScrollBar>
 #include <QCursor>
 #include <QMouseEvent>
@@ -121,6 +123,7 @@ void InstCh::setInstrumentType(InstrumentType t)
 void InstCh::setInstrumentName(const QString &name)
 {
     ui->lbName->setText(name);
+    fitName();
 }
 
 void InstCh::setFullInstrumentName(const QString &name)
@@ -134,6 +137,31 @@ void InstCh::setInstrumentNames(const QString &name, const QString &tooltip)
     ui->lbName->setText(name);
     ui->lbName->setToolTip(tooltip);
     ui->lbImage->setToolTip(tooltip);
+    fitName();
+}
+
+void InstCh::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    fitName();
+}
+
+// shrink the instrument name until the whole text fits inside the channel strip
+void InstCh::fitName()
+{
+    QLabel *lb = ui->lbName;
+    lb->setSizePolicy(QSizePolicy::Ignored, lb->sizePolicy().verticalPolicy());
+    int avail = qMin(lb->width() > 20 ? lb->width() : width(), width()) - 4;
+    if (avail < 20)
+        return;
+    QFont f = lb->font();
+    for (int pt = 9; pt >= 5; --pt)
+    {
+        f.setPointSizeF(pt);
+        if (QFontMetrics(f).horizontalAdvance(lb->text()) <= avail)
+            break;
+    }
+    lb->setFont(f);
 }
 
 void InstCh::setInstrumentImage(const QImage &img)

@@ -1595,7 +1595,46 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
     menu.addAction(&actionMappChanel);
     menu.addSeparator();
 
-    { // window / config / tuning options
+    { // mixer tools (all former Menu-button items live here now)
+        QIcon onIcon(":/Icons/circle_green");
+        QIcon offIcon(":/Icons/circle_red");
+        MidiSynthesizer *syn = player->midiSynthesizer();
+
+        QAction *act = menu.addAction(QIcon(":Icons/list-ol.png"), tr("บัสกรุ๊ป..."));
+        connect(act, SIGNAL(triggered()), this, SLOT(showBusGroupDialog()));
+
+        act = menu.addAction(QIcon(":Icons/speaker.png"), tr("แยกอุปกรณ์เสียง/ลำโพง..."));
+        connect(act, SIGNAL(triggered()), this, SLOT(showSpeakerDialog()));
+
+        #ifndef __linux__
+        act = menu.addAction(QIcon(":Icons/list-alt.png"), tr("จัดการ VST && VSTi..."));
+        connect(act, SIGNAL(triggered()), this, SLOT(showVSTDirDialog()));
+        #endif
+
+        act = menu.addAction(QIcon(":Icons/bar-chart.png"), tr("ตั้งค่า LED Meter..."));
+        connect(act, &QAction::triggered, this, [this]() {
+            QMetaObject::invokeMethod(synthMix, "showVuDlg");
+        });
+
+        menu.addSeparator();
+
+        actionShowEqDlg.setIcon(syn->equalizer31BandFXs()[0]->isOn() ? onIcon : offIcon);
+        actionShowChorusDlg.setIcon(syn->chorusFXs()[0]->isOn() ? onIcon : offIcon);
+        actionShowReverbDlg.setIcon(syn->reverbFXs()[0]->isOn() ? onIcon : offIcon);
+        menu.addAction(&actionShowEqDlg);
+        menu.addAction(&actionShowChorusDlg);
+        menu.addAction(&actionShowReverbDlg);
+        menu.addAction(&actionMapSF);
+        menu.addSeparator();
+
+        act = menu.addAction(QIcon(":Icons/refresh.png"), tr("รีเซ็ต"));
+        connect(act, &QAction::triggered, this, [this]() {
+            QMetaObject::invokeMethod(synthMix, "resetChannel");
+        });
+
+        menu.addSeparator();
+
+        // the one and only "On Top" switch
         QAction *topAct = menu.addAction(tr("อยู่บนสุดตลอดเวลา (On Top)"));
         topAct->setCheckable(true);
         topAct->setChecked(synthMix->isStaysOnTop());
@@ -1605,7 +1644,7 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
 
         QAction *drumAct = menu.addAction(tr("ตัดคำสั่งจูนเสียงกลอง/สแนร์ (ช่อง 10)"));
         drumAct->setCheckable(true);
-        drumAct->setChecked(player->midiSynthesizer()->isIgnoreDrumPitch());
+        drumAct->setChecked(syn->isIgnoreDrumPitch());
         connect(drumAct, &QAction::triggered, this, [this](bool on) {
             player->midiSynthesizer()->setIgnoreDrumPitch(on);
             settings->setValue("IgnoreDrumPitch", on);
@@ -1620,28 +1659,6 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
 
         menu.addSeparator();
     }
-
-    // synth mixer tool
-    {
-        QMenu *m = menu.addMenu(tr("Mixer Tools"));
-
-        QAction *act = m->addAction(tr("บัสกรุ๊ป..."));
-        connect(act, SIGNAL(triggered()), this, SLOT(showBusGroupDialog()));
-
-        act = m->addAction(tr("แยกอุปกรณ์เสียง/ลำโพง..."));
-        connect(act, SIGNAL(triggered()), this, SLOT(showSpeakerDialog()));
-
-        #ifndef __linux__
-        act = m->addAction(tr("จัดการ VST && VSTi..."));
-        connect(act, SIGNAL(triggered()), this, SLOT(showVSTDirDialog()));
-        #endif
-    }
-
-    menu.addAction(&actionShowEqDlg);
-    menu.addAction(&actionShowChorusDlg);
-    menu.addAction(&actionShowReverbDlg);
-    menu.addAction(&actionMapSF);
-    menu.addSeparator();
 
     { // lang menu
         QMenu *m = menu.addMenu(tr("Language"));

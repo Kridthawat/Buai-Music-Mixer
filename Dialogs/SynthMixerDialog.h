@@ -75,7 +75,6 @@ protected:
     void showEvent(QShowEvent *);
     void hideEvent(QHideEvent *event);
     void closeEvent(QCloseEvent *event);
-    void contextMenuEvent(QContextMenuEvent *event);
     void reject();
 
 private:

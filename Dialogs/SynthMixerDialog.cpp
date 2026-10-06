@@ -947,58 +947,9 @@ void SynthMixerDialog::removeFX()
 
 void SynthMixerDialog::on_btnMenu_clicked()
 {
-    QIcon onIcon(":/Icons/circle_green");
-    QIcon offIcon(":/Icons/circle_red");
-    bool eqOn = synth->equalizer31BandFXs()[0]->isOn();
-    bool chrOn = synth->chorusFXs()[0]->isOn();
-    bool revOn = synth->reverbFXs()[0]->isOn();
-
-    QAction busAct(QIcon(":Icons/list-ol.png"), tr("บัสกรุ๊ป..."), this);
-    QAction spkAct(QIcon(":Icons/speaker.png"), tr("แยกลำโพง..."), this);
-    #ifndef __linux__
-    QAction vstAct(QIcon(":Icons/list-alt.png"), tr("VST && VSTi..."), this);
-    #endif
-    QAction vuAct(QIcon(":Icons/bar-chart.png"), tr("ตั้งค่า LED Meter..."), this);
-    QAction eqAct(eqOn ? onIcon : offIcon, tr("อีควอไลเซอร์..."), this);
-    QAction chrAct(chrOn ? onIcon : offIcon, tr("เอฟเฟ็กต์เสียงประสาน..."), this);
-    QAction revAct(revOn ? onIcon : offIcon, tr("เอฟเฟ็กต์เสียงก้อง..."), this);
-    QAction resetAct(QIcon(":Icons/refresh.png"), tr("รีเซ็ต"), this);
-    QAction stayTopAct(tr("อยู่บนสุดตลอดเวลา"), this);
-
-    stayTopAct.setCheckable(true);
-    stayTopAct.setChecked(staysOnTop);
-
-    connect(&busAct, SIGNAL(triggered()), this, SLOT(showBusDlg()));
-    connect(&spkAct, SIGNAL(triggered()), this, SLOT(showSpeakersDlg()));
-    #ifndef __linux__
-    connect(&vstAct, SIGNAL(triggered()), this, SLOT(showVSTDirsDlg()));
-    #endif
-    connect(&vuAct, SIGNAL(triggered()), this, SLOT(showVuDlg()));
-    connect(&eqAct, SIGNAL(triggered()), this, SLOT(showEqDialog()));
-    connect(&chrAct, SIGNAL(triggered()), this, SLOT(showChorusDialog()));
-    connect(&revAct, SIGNAL(triggered()), this, SLOT(showReverbDialog()));
-    connect(&resetAct, SIGNAL(triggered()), this, SLOT(resetChannel()));
-    connect(&stayTopAct, SIGNAL(triggered(bool)), this, SLOT(setStaysOnTop(bool)));
-
-    QMenu menu(this);
-    menu.setFixedWidth(230);
-    menu.addAction(&busAct);
-    menu.addAction(&spkAct);
-    #ifndef __linux__
-    menu.addAction(&vstAct);
-    #endif
-    menu.addAction(&vuAct);
-    menu.addSeparator();
-    menu.addAction(&eqAct);
-    menu.addAction(&chrAct);
-    menu.addAction(&revAct);
-    menu.addSeparator();
-    menu.addAction(&resetAct);
-    menu.addSeparator();
-    menu.addAction(&stayTopAct);
-
-    QPoint point = mapToGlobal(QPoint(width() - 230, ui->btnMenu->height() + 5));
-    menu.exec(point);
+    // One unified menu (shared with the main window code) holds every setting.
+    QPoint point = mapToGlobal(QPoint(width() - 260, ui->btnMenu->height() + 5));
+    mainWin->showContextMenuAt(point);
 }
 
 
@@ -1079,13 +1030,6 @@ void SynthMixerDialog::closeEvent(QCloseEvent *event)
 
     event->accept();
     qApp->quit();
-}
-
-void SynthMixerDialog::contextMenuEvent(QContextMenuEvent *event)
-{
-    // Same right-click menu as the main window of the full program.
-    mainWin->showContextMenuAt(event->globalPos());
-    event->accept();
 }
 
 void SynthMixerDialog::reject()

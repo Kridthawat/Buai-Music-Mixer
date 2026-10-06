@@ -10,6 +10,9 @@
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPolygon>
+#include <QRegion>
+#include <QResizeEvent>
 #include <QLinearGradient>
 #include <QPixmap>
 #include <QFont>
@@ -228,7 +231,23 @@ protected:
         QColor c = palette().color(QPalette::Link);
         c.setAlpha(130);
         p.setPen(QPen(c, 1));
-        p.drawRect(rect().adjusted(0, 0, -1, -1));
+        p.setRenderHint(QPainter::Antialiasing);
+        p.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), 10, 10);
+    }
+
+    void resizeEvent(QResizeEvent *) override
+    {
+        if (QWidget *w = parentWidget())
+        {
+            if (w->isMaximized() || w->isFullScreen())
+                w->clearMask();
+            else
+            {
+                QPainterPath path;
+                path.addRoundedRect(QRectF(w->rect()), 10, 10);
+                w->setMask(QRegion(path.toFillPolygon().toPolygon()));
+            }
+        }
     }
 };
 

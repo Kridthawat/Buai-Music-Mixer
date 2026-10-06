@@ -14,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QWindow>
 #include <QPainter>
+#include <QPainterPath>
 #include "Widgets/TitleBar.h"
 
 #include <bass.h>
@@ -1064,8 +1065,21 @@ void SynthMixerDialog::paintEvent(QPaintEvent *event)
     QPainter p(this);
     QColor c = palette().color(QPalette::Link);
     c.setAlpha(120);
+    p.setRenderHint(QPainter::Antialiasing);
     p.setPen(QPen(c, 1));
-    p.drawRect(rect().adjusted(0, 0, -1, -1));
+    p.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), 10, 10);
+    if (property("_maskSize").toSize() != size())
+    {
+        setProperty("_maskSize", size());
+        if (isMaximized() || isFullScreen())
+            clearMask();
+        else
+        {
+            QPainterPath path;
+            path.addRoundedRect(QRectF(rect()), 10, 10);
+            setMask(QRegion(path.toFillPolygon().toPolygon()));
+        }
+    }
 }
 
 void SynthMixerDialog::closeEvent(QCloseEvent *event)

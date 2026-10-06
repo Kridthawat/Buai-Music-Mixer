@@ -84,41 +84,49 @@ void SwitchButton::mouseReleaseEvent(QMouseEvent *event)
     QWidget::mouseReleaseEvent(event);
 }
 
-void SwitchButton::paintEvent(QPaintEvent *event)
+void SwitchButton::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::TextAntialiasing);
 
-    QPen pen(palette().color(QPalette::Shadow), 1);
-    p.setPen(pen);
+    const bool dark = palette().color(QPalette::Window).lightness() < 128;
+    const QColor neon = palette().color(QPalette::Link);
+    const QRectF r = QRectF(rect()).adjusted(1, 1, -1, -1);
+    const qreal rad = r.height() / 2.0;
 
+    QColor track, border, text;
     if (_on)
     {
-        p.setBrush(palette().color(QPalette::Highlight));
-        p.drawRoundedRect(rect(), height()/2.0, height()/2.0);
-
-        qreal tx = (width() - height() + 4 - fontMetrics().width(_onText)) / 2.0;
-        qreal ty = (height() + font().pointSize()) / 2.0;
-
-        p.setPen(QPen(palette().color(QPalette::Light), 1));
-        p.drawText(tx, ty, _onText);
+        track = dark ? QColor(0x39, 0xff, 0x88) : QColor(0x10, 0xc5, 0x5a);
+        border = track.darker(120);
+        text = dark ? QColor(0x06, 0x2b, 0x14) : QColor(Qt::white);
     }
     else
     {
-        p.setBrush(palette().color(QPalette::Midlight));
-        p.drawRoundedRect(rect(), height()/2.0, height()/2.0);
-
-        //qreal tx = (width() - height() - 2 + fontMetrics().width(_offText)) / 2.0;
-        qreal tx = (width() + height() - 4 - fontMetrics().width(_offText)) / 2.0;
-        qreal ty = (height() + font().pointSize()) / 2.0;
-
-        p.setPen(QPen(palette().color(QPalette::Mid), 1));
-        p.drawText(tx, ty, _offText);
+        track = dark ? QColor(0x2c, 0x31, 0x3d) : QColor(0xd4, 0xd8, 0xe0);
+        border = dark ? QColor(0x5a, 0x62, 0x75) : QColor(0x9a, 0xa1, 0xb0);
+        text = dark ? QColor(0xc8, 0xcf, 0xdc) : QColor(0x4a, 0x50, 0x5e);
     }
+    Q_UNUSED(neon);
 
-    p.setPen(pen);
-    p.setBrush(palette().color(QPalette::Button));
-    p.drawEllipse(_x, 2, height()-4, height()-4);
+    p.setPen(QPen(border, 1.2));
+    p.setBrush(track);
+    p.drawRoundedRect(r, rad, rad);
 
-    p.end();
+    QFont f = font();
+    f.setBold(true);
+    f.setPixelSize(qMax(9, int(height() * 0.45)));
+    p.setFont(f);
+    p.setPen(text);
+
+    const int knob = height() - 4;
+    if (_on)
+        p.drawText(QRectF(r.left() + 2, r.top(), r.width() - knob - 6, r.height()), Qt::AlignCenter, _onText);
+    else
+        p.drawText(QRectF(r.left() + knob + 4, r.top(), r.width() - knob - 6, r.height()), Qt::AlignCenter, _offText);
+
+    p.setPen(QPen(border, 1.2));
+    p.setBrush(_on ? QColor(Qt::white) : (dark ? QColor(0xe6, 0xea, 0xf2) : QColor(Qt::white)));
+    p.drawEllipse(QRectF(_x, 2, knob, knob));
 }

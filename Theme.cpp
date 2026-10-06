@@ -86,6 +86,8 @@ QString buildStyleSheet(const Colors &c)
         "QToolButton:disabled { color: @dim; }"
         "QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox { background-color: @base; color: @text;"
         "  border: 1px solid @border; border-radius: 6px; padding: 3px 6px; selection-background-color: @accent; }"
+        "QSpinBox, QDoubleSpinBox { padding: 1px 14px 1px 3px; font-weight: bold; }"
+        "QSpinBox::up-button, QDoubleSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::down-button { width: 13px; border: none; background: transparent; }"
         "QLineEdit:focus, QSpinBox:focus, QComboBox:focus { border-color: @accent; }"
         "QComboBox QAbstractItemView { background-color: @base; color: @text;"
         "  selection-background-color: @accent; selection-color: @accentText; border: 1px solid @border; }"

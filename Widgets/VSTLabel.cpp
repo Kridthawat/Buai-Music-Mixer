@@ -73,18 +73,22 @@ void VSTLabel::applyNeon()
 
 void VSTLabel::updateBtnStyle()
 {
-    const QColor neon = palette().color(QPalette::Link);
     const bool dark = palette().color(QPalette::Window).lightness() < 128;
-    const QColor core = dark ? neon.lighter(150) : neon;
+
+    // power light: neon green when the effect is on, dark/dim when bypassed
+    const QColor green = dark ? QColor("#39ff88") : QColor("#10c55a");
 
     if (fxBypass)
         ui->btn->setStyleSheet(QString("background: transparent; border: 1px solid %1; border-radius: 6px;")
-                               .arg(neon.name()));
+                               .arg(palette().color(QPalette::Mid).name()));
     else
         ui->btn->setStyleSheet(QString("background: %1; border: 1px solid %2; border-radius: 6px;")
-                               .arg(core.name()).arg(neon.name()));
+                               .arg(green.name()).arg(green.lighter(140).name()));
 
-    btnGlow->setColor(neon);
+    QColor glow = green;
+    glow.setAlpha(255);
+    btnGlow->setColor(glow);
+    btnGlow->setBlurRadius(16);
     btnGlow->setEnabled(!fxBypass);
 }
 

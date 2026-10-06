@@ -111,7 +111,16 @@ QString buildStyleSheet(const Colors &c)
         "QSlider::groove:horizontal { height: 4px; background: @border2; border-radius: 2px; }"
         "QSlider::sub-page:horizontal { background: @accent; border-radius: 2px; }"
         "QSlider::handle:horizontal { background: @text; width: 14px; margin: -6px 0; border-radius: 7px; }"
-        "QCheckBox, QRadioButton { spacing: 8px; }";
+        "QCheckBox, QRadioButton { spacing: 8px; }"
+        "QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid @dimtab; border-radius: 4px; background-color: @base; }"
+        "QCheckBox::indicator:hover { border-color: @accent; }"
+        "QCheckBox::indicator:checked { background-color: @accent; border-color: @accent; image: url(:/Icons/check_white.png); }"
+        "QCheckBox::indicator:disabled { border-color: @border; background-color: @altbase; }"
+        "QRadioButton::indicator { width: 14px; height: 14px; border: 1px solid @dimtab; border-radius: 8px; background-color: @base; }"
+        "QRadioButton::indicator:hover { border-color: @accent; }"
+        "QRadioButton::indicator:checked { border-color: @accent; background-color: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5,"
+        "  stop:0 @accentText, stop:0.4 @accentText, stop:0.5 @accent, stop:1 @accent); }"
+        "QRadioButton::indicator:disabled { border-color: @border; }";
 
     // longer tokens first so that e.g. @accentText is not eaten by @accent
     QList<QPair<QString, QString> > tokens;

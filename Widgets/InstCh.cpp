@@ -32,6 +32,12 @@ InstCh::InstCh(QWidget *parent) :
     QScrollBar *bar = ui->fxList->verticalScrollBar();
     bar->setStyleSheet(fxListScroll);
 
+    // Selecting / hovering an effect must not tint the row (it changed the colors of the FX label)
+    ui->fxList->setFocusPolicy(Qt::NoFocus);
+    ui->fxList->setStyleSheet("QListWidget::item, QListWidget::item:selected, QListWidget::item:hover,"
+                              "QListWidget::item:selected:active, QListWidget::item:selected:!active"
+                              " { background: transparent; border: none; }");
+
 
     ui->slider->setMaximumLevel(100);
     ui->slider->setLevel(50);

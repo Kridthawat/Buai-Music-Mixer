@@ -7,6 +7,7 @@
 
 #include <QObject>
 #include <QDialog>
+#include <QApplication>
 #include <QHash>
 #include <QSet>
 #include <QEvent>
@@ -43,6 +44,7 @@ protected:
             return false;
 
         if (e->type() == QEvent::Polish) {
+            inheritStayOnTop(dlg);
             skin(dlg);
             return false;
         }
@@ -119,6 +121,22 @@ private:
         if (v)
             return Qt::SizeVerCursor;
         return Qt::ArrowCursor;
+    }
+
+    // A dialog opened while a "stay on top" window (the mixer) is showing must not end up behind it.
+    static void inheritStayOnTop(QDialog *dlg)
+    {
+        if (!dlg->isWindow() || dlg->isVisible())
+            return;
+        if (dlg->windowFlags() & Qt::WindowStaysOnTopHint)
+            return;
+        const QWidgetList tops = QApplication::topLevelWidgets();
+        for (QWidget *w : tops) {
+            if (w != dlg && w->isVisible() && (w->windowFlags() & Qt::WindowStaysOnTopHint)) {
+                dlg->setWindowFlag(Qt::WindowStaysOnTopHint, true);
+                break;
+            }
+        }
     }
 
     void skin(QDialog *dlg)

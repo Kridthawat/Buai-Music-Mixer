@@ -2,7 +2,6 @@
 #define INSTCH_H
 
 #include <QWidget>
-#include <QResizeEvent>
 
 #include "Widgets/LEDVu.h"
 #include "Midi/MidiSynthesizer.h"
@@ -15,12 +14,6 @@ class InstCh;
 class InstCh : public QWidget
 {
     Q_OBJECT
-
-protected:
-    void resizeEvent(QResizeEvent *event) override;
-
-private:
-    void fitName();
 
 public:
     explicit InstCh(QWidget *parent = 0);

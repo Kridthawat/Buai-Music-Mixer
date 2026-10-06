@@ -1,4 +1,4 @@
-name: Build Buai Music Mixer installer (Windows x64 + x86)
+name: Build Buai Music Mixer installer (Windows x64 + x86 (32-bit))
 
 on:
   workflow_dispatch:
@@ -72,31 +72,14 @@ jobs:
           windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw "$d\BuaiMusicMixer.exe"
           Invoke-WebRequest "https://aka.ms/vs/17/release/vc_redist.$arch.exe" -OutFile "deploy\VC_redist.$arch.exe"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: deploy-${{ matrix.arch }}
-          path: deploy
-
-  installer:
-    needs: build
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: deploy-*
-          path: deploy
-          merge-multiple: true
-
       - name: Build installer (Inno Setup)
         shell: pwsh
         run: |
-          Get-ChildItem deploy | Select-Object Name
           choco install innosetup -y --no-progress
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.1.0" "_iss_setup\buai-mixer.iss"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.1.0" "_iss_setup\buai-mixer-${{ matrix.arch }}.iss"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BuaiMusicMixer-setup
+          name: BuaiMusicMixer-setup-${{ matrix.arch }}
           path: dist\*.exe
+

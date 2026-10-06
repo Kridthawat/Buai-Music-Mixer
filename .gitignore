@@ -31,10 +31,6 @@
 *.out
 *.app
 
-# HNK
-Midi/HNKFileComp.h
-Midi/HNKFile.h
-Midi/HNKFile.cpp
 
-HandyKaraoke.pro.user
-HandyKaraoke.pro.user.*
+BuaiMusicMixer.pro.user
+BuaiMusicMixer.pro.user.*

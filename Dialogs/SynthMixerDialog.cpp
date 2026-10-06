@@ -9,6 +9,9 @@
 #include <QCloseEvent>
 #include <QContextMenuEvent>
 #include <QScrollBar>
+#include <QSlider>
+#include <QLabel>
+#include <QHBoxLayout>
 
 #include <bass.h>
 
@@ -53,6 +56,29 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
     this->mainWin = mainWin;
     this->player = mainWin->midiPlayer();
     this->synth = player->midiSynthesizer();
+
+    { // Master volume slider (next to the Menu button)
+        QLabel *lbMaster = new QLabel(tr("Master"), this);
+        masterSlider = new QSlider(Qt::Horizontal, this);
+        masterSlider->setRange(0, 100);
+        masterSlider->setFixedWidth(150);
+        masterSlider->setFocusPolicy(Qt::NoFocus);
+        masterSlider->setToolTip(tr("ระดับเสียงรวม (Master Volume)"));
+        masterSlider->setValue(player->volume());
+        masterValue = new QLabel(QString::number(player->volume()), this);
+        masterValue->setMinimumWidth(26);
+        masterValue->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+
+        int pos = ui->horizontalLayout_2->indexOf(ui->btnMenu);
+        ui->horizontalLayout_2->insertWidget(pos, masterValue);
+        ui->horizontalLayout_2->insertWidget(pos, masterSlider);
+        ui->horizontalLayout_2->insertWidget(pos, lbMaster);
+
+        connect(masterSlider, &QSlider::valueChanged, this, [this](int v) {
+            player->setVolume(v);
+            masterValue->setText(QString::number(v));
+        });
+    }
 
     mapChInstUI();
     setChInstDetails();
@@ -285,12 +311,18 @@ void SynthMixerDialog::setFXToSynth()
             if (fx == nullptr)
                 continue;
 
-            if (fx->fxType() == FXType::VSTEffects && vstChunks.length() > 0) {
-                fx->setChunk(vstChunks[i]);
-            }
+            bool haveChunk = fx->fxType() == FXType::VSTEffects
+                          && i < vstChunks.length() && vstChunks[i].length() > 0;
 
-            fx->setProgram(vstPrograms[i]);
-            fx->setParams(vstParams[i]);
+            if (haveChunk) {
+                // full plugin state; program/params would only revert it
+                fx->setChunk(vstChunks[i]);
+            } else {
+                if (i < vstPrograms.length())
+                    fx->setProgram(vstPrograms[i]);
+                if (i < vstParams.length())
+                    fx->setParams(vstParams[i]);
+            }
         }
 
     }
@@ -314,6 +346,14 @@ QMap<InstrumentType, InstCh *> *SynthMixerDialog::mixChannelMapPtr()
 
 void SynthMixerDialog::settingValues()
 {
+    if (skipSave)
+        return;
+
+    {   // master volume lives in the application config
+        QSettings app(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+        app.setValue("MidiVolume", player->volume());
+    }
+
     QSettings st(Config::CONFIG_SYNTH_FILE_PATH, QSettings::IniFormat);
     st.setValue("Size", this->size());
     st.setValue("SplitterSize", QVariant::fromValue(ui->splitter->sizes()));

@@ -9,6 +9,8 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFileDialog>
+#include <QProcess>
+#include <QSettings>
 #include <QWindow>
 
 #include "Config.h"
@@ -197,6 +199,7 @@ MainWindow::MainWindow(QWidget *parent) :
         player->setMidiOut(oPort);
         player->setMidiIn(iPort);
         player->setVolume(vl);
+        player->midiSynthesizer()->setIgnoreDrumPitch(settings->value("IgnoreDrumPitch", true).toBool());
 
         // Auto (re)connect the MIDI-in device by name, so the mixer works no
         // matter whether the karaoke program / virtual MIDI cable starts first.
@@ -419,8 +422,10 @@ MainWindow::~MainWindow()
 
     delete synthMix;
 
-    settings->setValue("LastOpenDir", Utils::LAST_OPEN_DIR);
-    settings->setValue("MidiVolume", ui->sliderVolume->value());
+    if (!skipSaveOnExit) {
+        settings->setValue("LastOpenDir", Utils::LAST_OPEN_DIR);
+        settings->setValue("MidiVolume", player->volume());
+    }
     if (this->isFullScreen()) {
         settings->setValue("WindowFullScreen", true);
         settings->setValue("WindowMaximized", false);
@@ -1469,6 +1474,91 @@ void MainWindow::showContextMenu(const QPoint &pos)
     showContextMenuAt(mapToGlobal(pos));
 }
 
+static const char *CFG_APP_PREFIX   = "App/";
+static const char *CFG_SYNTH_PREFIX = "Synth/";
+
+void MainWindow::saveConfigFile()
+{
+    // make sure the file on disk holds the current mixer state first
+    synthMix->settingValues();
+    settings->sync();
+
+    QString file = QFileDialog::getSaveFileName(synthMix, tr("บันทึกคอนฟิก"),
+                        QDir::homePath() + "/BuaiMusicMixer.bmcfg",
+                        tr("Buai Mixer config (*.bmcfg)"));
+    if (file.isEmpty())
+        return;
+    if (!file.endsWith(".bmcfg", Qt::CaseInsensitive))
+        file += ".bmcfg";
+
+    QFile::remove(file);
+    {
+        QSettings out(file, QSettings::IniFormat);
+        QSettings app(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+        QSettings syn(Config::CONFIG_SYNTH_FILE_PATH, QSettings::IniFormat);
+
+        for (const QString &k : app.allKeys())
+            out.setValue(CFG_APP_PREFIX + k, app.value(k));
+        for (const QString &k : syn.allKeys())
+            out.setValue(CFG_SYNTH_PREFIX + k, syn.value(k));
+        out.sync();
+    }
+
+    QMessageBox::information(synthMix, tr("บันทึกคอนฟิก"),
+                             tr("บันทึกคอนฟิกเรียบร้อยแล้ว\n") + file);
+}
+
+void MainWindow::openConfigFile()
+{
+    QString file = QFileDialog::getOpenFileName(synthMix, tr("เปิดคอนฟิก"),
+                        QDir::homePath(), tr("Buai Mixer config (*.bmcfg)"));
+    if (file.isEmpty())
+        return;
+
+    QSettings in(file, QSettings::IniFormat);
+    QStringList keys = in.allKeys();
+
+    bool valid = false;
+    for (const QString &k : keys) {
+        if (k.startsWith(CFG_APP_PREFIX) || k.startsWith(CFG_SYNTH_PREFIX)) {
+            valid = true;
+            break;
+        }
+    }
+    if (!valid) {
+        QMessageBox::warning(synthMix, tr("เปิดคอนฟิก"), tr("ไฟล์นี้ไม่ใช่ไฟล์คอนฟิกของ Buai Music Mixer"));
+        return;
+    }
+
+    if (QMessageBox::question(synthMix, tr("เปิดคอนฟิก"),
+            tr("โปรแกรมจะโหลดคอนฟิกนี้แทนค่าปัจจุบัน แล้วเปิดโปรแกรมใหม่อัตโนมัติ\nต้องการดำเนินการต่อ?"),
+            QMessageBox::Yes|QMessageBox::No) != QMessageBox::Yes)
+        return;
+
+    // Do not let the exit routine overwrite what we are about to import.
+    skipSaveOnExit = true;
+    synthMix->setSkipSave(true);
+
+    {
+        QSettings app(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+        QSettings syn(Config::CONFIG_SYNTH_FILE_PATH, QSettings::IniFormat);
+        app.clear();
+        syn.clear();
+
+        for (const QString &k : keys) {
+            if (k.startsWith(CFG_APP_PREFIX))
+                app.setValue(k.mid(QString(CFG_APP_PREFIX).length()), in.value(k));
+            else if (k.startsWith(CFG_SYNTH_PREFIX))
+                syn.setValue(k.mid(QString(CFG_SYNTH_PREFIX).length()), in.value(k));
+        }
+        app.sync();
+        syn.sync();
+    }
+
+    QProcess::startDetached(qApp->applicationFilePath(), QStringList() << "--delay");
+    qApp->quit();
+}
+
 QWidget* MainWindow::dialogParent()
 {
     // The mixer is the only visible window in this edition.
@@ -1504,6 +1594,32 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
     menu.addSeparator();
     menu.addAction(&actionMappChanel);
     menu.addSeparator();
+
+    { // window / config / tuning options
+        QAction *topAct = menu.addAction(tr("อยู่บนสุดตลอดเวลา (On Top)"));
+        topAct->setCheckable(true);
+        topAct->setChecked(synthMix->isStaysOnTop());
+        connect(topAct, &QAction::triggered, this, [this](bool on) {
+            QMetaObject::invokeMethod(synthMix, "setStaysOnTop", Q_ARG(bool, on));
+        });
+
+        QAction *drumAct = menu.addAction(tr("ตัดคำสั่งจูนเสียงกลอง/สแนร์ (ช่อง 10)"));
+        drumAct->setCheckable(true);
+        drumAct->setChecked(player->midiSynthesizer()->isIgnoreDrumPitch());
+        connect(drumAct, &QAction::triggered, this, [this](bool on) {
+            player->midiSynthesizer()->setIgnoreDrumPitch(on);
+            settings->setValue("IgnoreDrumPitch", on);
+        });
+
+        menu.addSeparator();
+
+        QAction *saveCfg = menu.addAction(tr("บันทึกคอนฟิก (Save config)..."));
+        connect(saveCfg, &QAction::triggered, this, [this]() { saveConfigFile(); });
+        QAction *openCfg = menu.addAction(tr("เปิดคอนฟิก (Open config)..."));
+        connect(openCfg, &QAction::triggered, this, [this]() { openConfigFile(); });
+
+        menu.addSeparator();
+    }
 
     // synth mixer tool
     {

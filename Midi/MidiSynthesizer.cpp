@@ -615,6 +615,25 @@ void MidiSynthesizer::sendNoteAftertouch(int ch, int note, int value)
 
 void MidiSynthesizer::sendController(int ch, int number, int value)
 {
+    if (ignoreDrumPitch && ch == 9)
+    {
+        switch (number) {
+        case 99:  dpMode = 1; dpMsb = value; if (value == 24) return; break;   // NRPN MSB 24 = drum pitch
+        case 98:  dpMode = 1; dpLsb = value; if (dpMsb == 24) return; break;
+        case 101: dpMode = 2; dpMsb = value; break;
+        case 100: dpMode = 2; dpLsb = value; break;
+        case 121: dpMode = -1; break;
+        case 6:
+        case 38:
+            if (dpMode == 1 && dpMsb == 24)
+                return;
+            if (dpMode == 2 && dpMsb == 0 && (dpLsb == 1 || dpLsb == 2))   // fine / coarse tune
+                return;
+            break;
+        default: break;
+        }
+    }
+
     DWORD et;
 
     switch (number) {
@@ -730,7 +749,11 @@ void MidiSynthesizer::sendChannelAftertouch(int ch, int value)
 void MidiSynthesizer::sendPitchBend(int ch, int value)
 {
     if (ch == 9)
+    {
+        if (ignoreDrumPitch)
+            return;
         sendToAllMidiStream(ch, MIDI_EVENT_PITCH, value);
+    }
     else
     {
         int vstiIndex = instMap[chInstType[ch]].vsti;
@@ -1357,14 +1380,17 @@ DWORD MidiSynthesizer::createStream(InstrumentType t)
             #endif
             if (h)
             {
-                if (mVstiChunk[vIndex].length() > 0)
-                    BASS_VST_SetChunk(h, false, mVstiChunk[vIndex].constData(), mVstiChunk[vIndex].length());
-
                 BASS_VST_INFO info;
                 BASS_VST_GetInfo(h, &info);
                 mVstiInfos[vIndex] = info;
-                BASS_VST_SetProgram(h, mVstiTempProgram[vIndex]);
-                FX::setVSTParams(h, mVstiTempParams[vIndex]);
+
+                if (mVstiChunk[vIndex].length() > 0) {
+                    // chunk = complete state; don't revert it with program/params
+                    BASS_VST_SetChunk(h, false, mVstiChunk[vIndex].constData(), mVstiChunk[vIndex].length());
+                } else {
+                    BASS_VST_SetProgram(h, mVstiTempProgram[vIndex]);
+                    FX::setVSTParams(h, mVstiTempParams[vIndex]);
+                }
             }
             return h; // vsti handle
             #endif

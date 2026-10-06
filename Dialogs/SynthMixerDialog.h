@@ -34,6 +34,9 @@ public:
     QMap<InstrumentType, InstCh *> mixChannelMap();
     QMap<InstrumentType, InstCh *> *mixChannelMapPtr();
 
+    bool isStaysOnTop() const { return staysOnTop; }
+    void setSkipSave(bool skip) { skipSave = skip; }
+
 public slots:
     void settingValues();
     void setSoundfontPresets(int presets);
@@ -96,6 +99,9 @@ private:
     int currentFxIndexToRemove;
 
     bool staysOnTop = false;
+    bool skipSave = false;
+    class QSlider *masterSlider = nullptr;
+    class QLabel  *masterValue  = nullptr;
 
     void mapChInstUI();
     void setChInstDetails();

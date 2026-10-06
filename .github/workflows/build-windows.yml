@@ -1,4 +1,4 @@
-name: Build Buai Music Mixer installer (Windows x64)
+name: Build Buai Music Mixer installer (Windows x64 + x86)
 
 on:
   workflow_dispatch:
@@ -9,21 +9,29 @@ on:
 jobs:
   build:
     runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            qtarch: win64_msvc2019_64
+          - arch: x86
+            qtarch: win32_msvc2019
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt 5.15.2 (MSVC 2019 x64)
+      - name: Install Qt 5.15.2 (MSVC 2019 ${{ matrix.arch }})
         uses: jurplel/install-qt-action@v4
         with:
           version: '5.15.2'
           host: windows
           target: desktop
-          arch: win64_msvc2019_64
+          arch: ${{ matrix.qtarch }}
           cache: true
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          arch: ${{ matrix.arch }}
 
       - name: Build VSTChecker
         shell: cmd
@@ -48,25 +56,47 @@ jobs:
       - name: Collect files (windeployqt + BASS)
         shell: pwsh
         run: |
-          $d = "deploy\x64"
+          $arch = "${{ matrix.arch }}"
+          $d = "deploy\$arch"
+          $sub = if ($arch -eq "x64") { "x64\" } else { "" }
           New-Item -ItemType Directory -Force $d | Out-Null
           Copy-Item build-mixer\release\BuaiMusicMixer.exe $d
-          Copy-Item (Get-ChildItem -Recurse build-vstchecker -Filter VSTChecker_x64.exe | Select-Object -First 1).FullName $d
-          foreach ($f in @("BASS\bass24\x64\bass.dll","BASS\bass_fx24\x64\bass_fx.dll","BASS\bass_vst24\x64\bass_vst.dll","BASS\bassmidi24\x64\bassmidi.dll","BASS\bassmix24\x64\bassmix.dll")) {
-            Copy-Item $f $d
+          Copy-Item (Get-ChildItem -Recurse build-vstchecker -Filter "VSTChecker_$arch.exe" | Select-Object -First 1).FullName $d
+          $libs = @("bass24\bass.dll","bass_fx24\bass_fx.dll","bass_vst24\bass_vst.dll","bassmidi24\bassmidi.dll","bassmix24\bassmix.dll")
+          foreach ($l in $libs) {
+            $parts = $l.Split("\")
+            Copy-Item ("BASS\" + $parts[0] + "\" + $sub + $parts[1]) $d
           }
           New-Item -ItemType Directory -Force "$d\languages" | Out-Null
           Copy-Item languages\en.qm "$d\languages"
           windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw "$d\BuaiMusicMixer.exe"
-          Invoke-WebRequest https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile deploy\VC_redist.x64.exe
+          Invoke-WebRequest "https://aka.ms/vs/17/release/vc_redist.$arch.exe" -OutFile "deploy\VC_redist.$arch.exe"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-${{ matrix.arch }}
+          path: deploy
+
+  installer:
+    needs: build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: deploy-*
+          path: deploy
+          merge-multiple: true
 
       - name: Build installer (Inno Setup)
         shell: pwsh
         run: |
+          Get-ChildItem deploy | Select-Object Name
           choco install innosetup -y --no-progress
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.0.0" "_iss_setup\buai-mixer-x64.iss"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.1.0" "_iss_setup\buai-mixer.iss"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BuaiMusicMixer-setup-x64
+          name: BuaiMusicMixer-setup
           path: dist\*.exe

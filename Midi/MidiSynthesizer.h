@@ -66,6 +66,12 @@ public:
     void setVolume(float vol);
     float volume() { return synth_volume; }
 
+    // Ignore pitch/tuning commands sent to the drum channel (ch 10): GS drum
+    // NRPN pitch, RPN fine/coarse tune and pitch bend. Some songs contain them
+    // and make the snare sound tighter/higher, as if it had been re-tuned.
+    void setIgnoreDrumPitch(bool ignore) { ignoreDrumPitch = ignore; }
+    bool isIgnoreDrumPitch() const { return ignoreDrumPitch; }
+
     QStringList soundfontFiles() { return sfFiles; }
     bool addSoundfont(const QString &sfFile);
     void removeSoundfont(int sfIndex);
@@ -210,6 +216,10 @@ private:
 
     float synth_volume = 1.0f;
     bool openned = false;
+    bool ignoreDrumPitch = true;
+    int  dpMode = -1;   // -1 none, 1 NRPN, 2 RPN (last parameter selected on ch 10)
+    int  dpMsb = 127;
+    int  dpLsb = 127;
     bool useSolo = false;
 
     int defaultDev = 1;

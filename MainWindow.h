@@ -61,6 +61,8 @@ public:
     SynthMixerDialog* synthMixerDialog() { return synthMix; }
     QWidget* dialogParent();
     void showContextMenuAt(const QPoint &globalPos);
+    void saveConfigFile();
+    void openConfigFile();
 
 public slots:
     void play(int index, int position = 0);
@@ -154,6 +156,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QSettings *settings;
+    bool skipSaveOnExit = false;
     SongDatabase *db;
     QTimer *timer1, *timer2, *positionTimer, *lyricsTimer;
     QTimer *detailTimer;

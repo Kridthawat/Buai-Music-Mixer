@@ -7,6 +7,7 @@
 #include <QStyleFactory>
 #include <QPalette>
 #include <QColor>
+#include <QThread>
 
 #include "BASSFX/VSTFX.h"
 #include "version.h"
@@ -31,6 +32,10 @@ void makeVSTList(QSplashScreen *splash, MidiSynthesizer *synth);
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    // Started by "Open config": give the previous instance time to release audio/MIDI devices.
+    if (a.arguments().contains("--delay"))
+        QThread::msleep(1500);
 
     QCoreApplication::setApplicationName(VER_PRODUCTNAME_STR);
     QCoreApplication::setApplicationVersion(VER_FILEVERSION_STR);
@@ -205,11 +210,12 @@ void loadVSTi(QSplashScreen *splash, MidiSynthesizer *synth)
 
         if (vsti != 0)
         {
-            if (chunk.length() > 0)
+            if (chunk.length() > 0) {
                 BASS_VST_SetChunk(vsti, false, chunk.constData(), chunk.length());
-
-            BASS_VST_SetProgram(vsti, program);
-            FX::setVSTParams(vsti, params);
+            } else {
+                BASS_VST_SetProgram(vsti, program);
+                FX::setVSTParams(vsti, params);
+            }
         }
     }
 

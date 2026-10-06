@@ -228,7 +228,7 @@ win32 {
 
         #DEFINES += _ATL_XP_TARGETING
         #DEFINES += PSAPI_VERSION=1
-        QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.01
+        # (XP subsystem flag removed: not supported by current toolchains)
     } else {
         message("64-bit")
         LIBS += -L$$PWD/BASS/bass24/x64/ -lbass

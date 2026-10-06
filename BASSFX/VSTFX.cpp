@@ -178,9 +178,15 @@ void VSTFX::setStreamHandle(DWORD stream)
         #endif
 
         this->setBypass(this->isBypass());
-        this->setChunk(tempChunk);
-        this->setProgram(programIndex);
-        this->setParams(tempParams);
+        // The chunk holds the complete plugin state (incl. edits made in the
+        // plugin GUI). Re-selecting the program / re-applying old parameter
+        // values afterwards would revert it, so use them only as a fallback.
+        if (tempChunk.length() > 0) {
+            this->setChunk(tempChunk);
+        } else {
+            this->setProgram(programIndex);
+            this->setParams(tempParams);
+        }
     }
 }
 

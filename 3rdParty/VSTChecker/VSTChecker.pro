@@ -25,7 +25,7 @@ win32 {
         LIBS += -L$$PWD/3rdParty/bass_vst24/ -lbass_vst
 
         RC_FILE = resources.rc
-        QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.01
+        # (XP subsystem flag removed: not supported by current toolchains)
     } else {
         message("64-bit")
         TARGET = VSTChecker_x64

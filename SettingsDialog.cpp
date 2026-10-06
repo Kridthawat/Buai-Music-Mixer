@@ -260,14 +260,10 @@ void SettingsDialog::initDeviceTab()
     int dfd = player->midiOutPortNumber();
 
 
-    for (QString d : MidiPlayer::midiDevices()) {
-        ui->cbMidiOut->addItem(d);
-    }
+    // Mixer edition: only the SoundFont synthesizer is offered as output.
+    Q_UNUSED(dfd)
     ui->cbMidiOut->addItem("Midi Synthesizer (SoundFont)");
-    if (dfd == -1)
-        ui->cbMidiOut->setCurrentIndex( ui->cbMidiOut->count() - 1 );
-    else
-        ui->cbMidiOut->setCurrentIndex( dfd );
+    ui->cbMidiOut->setCurrentIndex(0);
 
 
     // Midi In device
@@ -569,8 +565,10 @@ void SettingsDialog::on_cbMidiOut_activated(int index)
 
 void SettingsDialog::on_cbMidiIn_activated(int index)
 {
+    mainWin->stop();
     mainWin->midiPlayer()->setMidiIn(index-1);
     settings->setValue("MidiIn", index-1);
+    settings->setValue("MidiInName", index > 0 ? ui->cbMidiIn->itemText(index) : QString());
 }
 
 void SettingsDialog::on_cbAudioOut_activated(int index)
@@ -582,6 +580,8 @@ void SettingsDialog::on_cbAudioOut_activated(int index)
     }*/
     MidiSynthesizer *synth = mainWin->midiPlayer()->midiSynthesizer();
 
+    // Stop playback first so changing the output device mid-play can't garble the sound.
+    mainWin->stop();
     synth->setDefaultDevice(index+1);
     settings->setValue("SynthDefaultDevice", index+1);
     /*if (BASS_SetDevice(index) == BASS_OK) {

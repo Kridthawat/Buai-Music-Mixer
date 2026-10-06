@@ -174,8 +174,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     { // Player
-        int oPort   = settings->value("MidiOut", 0).toInt();
+        // Mixer edition: output is always the SoundFont synthesizer
+        // (an external MIDI out such as "Microsoft GS Wavetable" lost the sf2).
+        int oPort   = -1;
+        settings->setValue("MidiOut", -1);
         int iPort   = settings->value("MidiIn", -1).toInt();
+        // MIDI-in is remembered by device name, because port numbers shift
+        // depending on which program/virtual cable was started first.
+        QString inName = settings->value("MidiInName", "").toString();
+        if (!inName.isEmpty()) {
+            int idx = MidiPlayer::midiInDevices().indexOf(inName);
+            if (idx >= 0)
+                iPort = idx;
+        }
         int vl      = settings->value("MidiVolume", 50).toInt();
         bool lDrum  = settings->value("MidiLockDrum", false).toBool();
         bool lSnare = settings->value("MidiLockSnare", false).toBool();
@@ -186,6 +197,24 @@ MainWindow::MainWindow(QWidget *parent) :
         player->setMidiOut(oPort);
         player->setMidiIn(iPort);
         player->setVolume(vl);
+
+        // Auto (re)connect the MIDI-in device by name, so the mixer works no
+        // matter whether the karaoke program / virtual MIDI cable starts first.
+        QTimer *midiInWatcher = new QTimer(this);
+        midiInWatcher->setInterval(2000);
+        connect(midiInWatcher, &QTimer::timeout, this, [this]() {
+            QString name = settings->value("MidiInName", "").toString();
+            if (name.isEmpty())
+                return;
+            int idx = MidiPlayer::midiInDevices().indexOf(name);
+            if (idx < 0) {
+                if (player->midiInPortNumber() != -1)
+                    player->setMidiIn(-1);
+            } else if (idx != player->midiInPortNumber()) {
+                player->setMidiIn(idx);
+            }
+        });
+        midiInWatcher->start();
 
         if (lDrum) {
             int ldNum = settings->value("MidiLockDrumNumber", 0).toInt();
@@ -204,7 +233,9 @@ MainWindow::MainWindow(QWidget *parent) :
         QList<int> ports = settings->value("MidiChannelMapper").value<QList<int>>();
         if (ports.count() == 16) {
             for (int i=0; i<16; i++) {
-                player->setMapChannelOutput(i, ports[i]);
+                // Mixer edition: every channel always goes to the SoundFont synth
+                Q_UNUSED(ports)
+                player->setMapChannelOutput(i, -1);
             }
         }
 

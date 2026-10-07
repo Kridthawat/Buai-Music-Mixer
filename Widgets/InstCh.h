@@ -65,16 +65,10 @@ private slots:
     void onFxByPassChanged(int fxIndex, bool bypass);
     void onFxDoubleClicked(int fxIndex);
 
-protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
-    void changeEvent(QEvent *event) override;
-
 private:
-    class QLabel *busBadge = nullptr;
-    int busValue = -1;
-    QString busBadgeKey;
-    void styleBusBadge();
-    void placeBusBadge();
+    class QListWidgetItem *busItem = nullptr;
+    class VSTLabel *busLabel = nullptr;
+    int fxCount() const;
     Ui::InstCh *ui;
 
     InstrumentType instType;

@@ -20,6 +20,8 @@ public:
 
     int getFxIndex() { return fxIndex; }
     void setFxIndex(int i) { fxIndex = i; }
+    void setLabelText(const QString &text);
+    void setIndicatorOnly(bool only) { indicatorOnly = only; }
 
 signals:
     void byPassChanged(int index, bool bypass);
@@ -44,6 +46,7 @@ private:
     QGraphicsDropShadowEffect *btnGlow = nullptr;
     QGraphicsDropShadowEffect *frameGlow = nullptr;
     bool fxBypass = false;
+    bool indicatorOnly = false;
     int fxIndex = 0;
 };
 

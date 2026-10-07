@@ -17,6 +17,8 @@
 #include <QWindow>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
+#include <QIcon>
 #include "Widgets/TitleBar.h"
 
 #include <bass.h>
@@ -132,6 +134,8 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
             masterValue->setText(QString::number(v));
         });
     }
+
+    updateMenuIcon();
 
     mapChInstUI();
     setChInstDetails();
@@ -594,6 +598,32 @@ void SynthMixerDialog::showPeakVU(InstrumentType t, int bus,  int ch, int note, 
         InstrumentType bType = static_cast<InstrumentType>(bus + synth->HANDLE_MIDI_COUNT);
         chInstMap[bType]->peak(velocity);
     }
+}
+
+// crisp "hamburger" icon for the Menu button, drawn in the current text color
+void SynthMixerDialog::updateMenuIcon()
+{
+    const qreal dpr = devicePixelRatioF();
+    const int sz = 16;
+    QPixmap pm(int(sz * dpr), int(sz * dpr));
+    pm.setDevicePixelRatio(dpr);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing, false);
+    QPen pen(palette().color(QPalette::ButtonText), 2, Qt::SolidLine, Qt::FlatCap);
+    p.setPen(pen);
+    for (int y : { 3, 8, 13 })
+        p.drawLine(QPointF(1, y), QPointF(sz - 1, y));
+    p.end();
+    ui->btnMenu->setIcon(QIcon(pm));
+    ui->btnMenu->setIconSize(QSize(sz, sz));
+}
+
+void SynthMixerDialog::changeEvent(QEvent *event)
+{
+    QDialog::changeEvent(event);
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange)
+        updateMenuIcon();
 }
 
 void SynthMixerDialog::syncQuickChecks()

@@ -18,18 +18,6 @@ InstCh::InstCh(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // "Bus N" badge shown inside the FX box when the channel is routed to a bus group
-    busBadge = new QLabel(ui->fxList);
-    busBadge->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    busBadge->setAttribute(Qt::WA_TransparentForMouseEvents);
-    QFont bf = busBadge->font();
-    bf.setPointSizeF(6.5);
-    bf.setBold(false);
-    bf.setWeight(QFont::Medium);
-    bf.setHintingPreference(QFont::PreferFullHinting);
-    busBadge->setFont(bf);
-    busBadge->hide();
-    ui->fxList->installEventFilter(this);
 
     // instrument name: slightly smaller font, fixed height so every strip stays aligned
     {
@@ -108,7 +96,7 @@ QString InstCh::fullInstrumentName()
 
 void InstCh::addFXLabel(const QString &label, int fxIndex, bool bypass)
 {
-    QListWidgetItem *item = new QListWidgetItem(ui->fxList);
+    QListWidgetItem *item = new QListWidgetItem();
 
     VSTLabel *vstLabel = new VSTLabel(ui->fxList, label, fxIndex, bypass);
 
@@ -119,9 +107,12 @@ void InstCh::addFXLabel(const QString &label, int fxIndex, bool bypass)
     connect(vstLabel, SIGNAL(menuRequested(int,QPoint)),
             this, SLOT(onFxMenuRequested(int,QPoint)));
 
-    ui->fxList->addItem(item);
+    // FX rows always stay above the "BusN" row
+    ui->fxList->insertItem(fxCount(), item);
     ui->fxList->setItemWidget(item, vstLabel);
-    QTimer::singleShot(0, this, [this]() { placeBusBadge(); });
+
+    // keep the newest rows in view
+    QTimer::singleShot(0, this, [this]() { ui->fxList->scrollToBottom(); });
 }
 
 void InstCh::removeVSTLabel(int fxIndex)
@@ -130,9 +121,8 @@ void InstCh::removeVSTLabel(int fxIndex)
     QWidget *widget = ui->fxList->itemWidget(item);
     delete widget;
     delete item;
-    QTimer::singleShot(0, this, [this]() { placeBusBadge(); });
 
-    for (int i=fxIndex; i<ui->fxList->count(); i++) {
+    for (int i=fxIndex; i<fxCount(); i++) {
         item = ui->fxList->item(i);
         widget = ui->fxList->itemWidget(item);
         VSTLabel *label = dynamic_cast<VSTLabel*>(widget);
@@ -275,77 +265,37 @@ void InstCh::onFxDoubleClicked(int fxIndex)
     emit fxDoubleClicked(instType, fxIndex);
 }
 
+// A "BusN" row, shown like an FX row (same size/font/green light) at the end of the FX list
 void InstCh::setBusBadge(int bus)
 {
-    busValue = bus;
     if (bus < 0) {
-        busBadge->hide();
-        return;
-    }
-    busBadge->setText(QString("Bus%1").arg(bus + 1));
-    busBadge->setToolTip(tr("ส่งออกไปที่ Bus Group %1").arg(bus + 1));
-    busBadgeKey.clear();
-    styleBusBadge();
-    placeBusBadge();
-    busBadge->show();
-    busBadge->raise();
-}
-
-void InstCh::styleBusBadge()
-{
-    // same look as an FX row (VSTLabel), just without the green power light
-    const QColor neon = palette().color(QPalette::Link);
-    const bool dark = palette().color(QPalette::Window).lightness() < 128;
-    const QString key = neon.name() + (dark ? "d" : "l");
-    if (key == busBadgeKey)
-        return;
-    busBadgeKey = key;
-    const QColor txt = dark ? neon.lighter(150) : neon;
-    busBadge->setStyleSheet(QString("QLabel { color: %1; background: rgba(%2,%3,%4,30);"
-                                    " border: 1px solid %5; border-radius: 4px; padding: 0px 4px; }")
-                            .arg(txt.name()).arg(neon.red()).arg(neon.green()).arg(neon.blue())
-                            .arg(neon.name()));
-}
-
-// the badge sits right below the last FX row, with the same size as an FX row
-void InstCh::placeBusBadge()
-{
-    if (!busBadge)
-        return;
-
-    QWidget *vp = ui->fxList->viewport();
-    int n = ui->fxList->count();
-    int x = 1, y = 1, w = vp->width() - 2, h = 16;
-
-    if (n > 0) {
-        QListWidgetItem *last = ui->fxList->item(n - 1);
-        QWidget *lw = ui->fxList->itemWidget(last);
-        QRect r = ui->fxList->visualItemRect(last);
-        if (lw) {
-            x = r.x();
-            w = lw->width() > 0 ? lw->width() : r.width();
-            h = lw->height() > 0 ? lw->height() : h;
+        if (busItem) {
+            int row = ui->fxList->row(busItem);
+            QListWidgetItem *it = ui->fxList->takeItem(row);
+            delete ui->fxList->itemWidget(it);
+            delete it;
+            busItem = nullptr;
+            busLabel = nullptr;
         }
-        y = r.bottom() + 2;
+        return;
     }
 
-    QPoint p = vp->mapTo(ui->fxList, QPoint(x, y));
-    busBadge->setGeometry(p.x(), p.y(), w, h);
-}
-
-bool InstCh::eventFilter(QObject *obj, QEvent *event)
-{
-    if (obj == ui->fxList && event->type() == QEvent::Resize && busBadge)
-        placeBusBadge();
-    return QWidget::eventFilter(obj, event);
-}
-
-void InstCh::changeEvent(QEvent *event)
-{
-    if ((event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange)
-            && busBadge && busValue >= 0) {
-        styleBusBadge();
-        placeBusBadge();
+    const QString text = QString("Bus%1").arg(bus + 1);
+    if (!busItem) {
+        busItem = new QListWidgetItem();
+        busLabel = new VSTLabel(ui->fxList, text, -1, false);
+        busLabel->setIndicatorOnly(true);
+        ui->fxList->addItem(busItem);
+        ui->fxList->setItemWidget(busItem, busLabel);
+    } else {
+        busLabel->setLabelText(text);
     }
-    QWidget::changeEvent(event);
+    busLabel->setToolTip(tr("ส่งออกไปที่ Bus Group %1").arg(bus + 1));
+
+    QTimer::singleShot(0, this, [this]() { ui->fxList->scrollToBottom(); });
+}
+
+int InstCh::fxCount() const
+{
+    return ui->fxList->count() - (busItem ? 1 : 0);
 }

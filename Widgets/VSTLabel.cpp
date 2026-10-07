@@ -133,8 +133,17 @@ void VSTLabel::mouseDoubleClickEvent(QMouseEvent *event)
     emit doubleClicked(fxIndex);
 }
 
+void VSTLabel::setLabelText(const QString &text)
+{
+    ui->label->setText(text);
+    ui->label->setToolTip(text);
+}
+
 void VSTLabel::on_btn_clicked()
 {
+    if (indicatorOnly)
+        return;
+
     fxBypass = !fxBypass;
 
     updateBtnStyle();

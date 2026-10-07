@@ -28,6 +28,7 @@
 #include "Dialogs/SpeakerDialog.h"
 #include "Dialogs/Equalizer31BandDialog.h"
 #include "Dialogs/Chorus2Dialog.h"
+#include "Widgets/MenuIcons.h"
 #include "Dialogs/Reverb2Dialog.h"
 #include "Dialogs/DeleteSongDialog.h"
 #include "Dialogs/MedleyDialog.h"
@@ -1596,38 +1597,45 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
     menu.addSeparator();
 
     { // mixer tools (all former Menu-button items live here now)
-        QIcon onIcon(":/Icons/circle_green");
-        QIcon offIcon(":/Icons/circle_red");
+        actionSettings.setIcon(MenuIcons::make(MenuIcons::Settings));
+        actionMappChanel.setIcon(MenuIcons::make(MenuIcons::Channel));
+        actionMapSF.setIcon(MenuIcons::make(MenuIcons::Soundfont));
+        actionAbout.setIcon(MenuIcons::make(MenuIcons::About));
+        actionExit.setIcon(MenuIcons::make(MenuIcons::Exit));
         MidiSynthesizer *syn = player->midiSynthesizer();
 
-        QAction *act = menu.addAction(QIcon(":Icons/list-ol.png"), tr("บัสกรุ๊ป..."));
+        QAction *act = menu.addAction(MenuIcons::make(MenuIcons::Bus), tr("บัสกรุ๊ป..."));
         connect(act, SIGNAL(triggered()), this, SLOT(showBusGroupDialog()));
 
-        act = menu.addAction(QIcon(":Icons/speaker.png"), tr("แยกอุปกรณ์เสียง/ลำโพง..."));
+        act = menu.addAction(MenuIcons::make(MenuIcons::Speaker), tr("แยกอุปกรณ์เสียง/ลำโพง..."));
         connect(act, SIGNAL(triggered()), this, SLOT(showSpeakerDialog()));
 
         #ifndef __linux__
-        act = menu.addAction(QIcon(":Icons/list-alt.png"), tr("จัดการ VST && VSTi..."));
+        act = menu.addAction(MenuIcons::make(MenuIcons::Vst), tr("จัดการ VST && VSTi..."));
         connect(act, SIGNAL(triggered()), this, SLOT(showVSTDirDialog()));
         #endif
 
-        act = menu.addAction(QIcon(":Icons/bar-chart.png"), tr("ตั้งค่า LED Meter..."));
+        act = menu.addAction(MenuIcons::make(MenuIcons::Meter), tr("ตั้งค่า LED Meter..."));
         connect(act, &QAction::triggered, this, [this]() {
             QMetaObject::invokeMethod(synthMix, "showVuDlg");
         });
 
         menu.addSeparator();
 
-        actionShowEqDlg.setIcon(syn->equalizer31BandFXs()[0]->isOn() ? onIcon : offIcon);
-        actionShowChorusDlg.setIcon(syn->chorusFXs()[0]->isOn() ? onIcon : offIcon);
-        actionShowReverbDlg.setIcon(syn->reverbFXs()[0]->isOn() ? onIcon : offIcon);
+        // effect pictograms: neon green when the effect is on, dimmed when off
+        auto fxIcon = [](MenuIcons::Kind k, bool on) {
+            return MenuIcons::make(k, on ? MenuIcons::onColor() : MenuIcons::dimColor());
+        };
+        actionShowEqDlg.setIcon(fxIcon(MenuIcons::Eq, syn->equalizer31BandFXs()[0]->isOn()));
+        actionShowChorusDlg.setIcon(fxIcon(MenuIcons::Chorus, syn->chorusFXs()[0]->isOn()));
+        actionShowReverbDlg.setIcon(fxIcon(MenuIcons::Reverb, syn->reverbFXs()[0]->isOn()));
         menu.addAction(&actionShowEqDlg);
         menu.addAction(&actionShowChorusDlg);
         menu.addAction(&actionShowReverbDlg);
         menu.addAction(&actionMapSF);
         menu.addSeparator();
 
-        act = menu.addAction(QIcon(":Icons/refresh.png"), tr("รีเซ็ต"));
+        act = menu.addAction(MenuIcons::make(MenuIcons::Reset), tr("รีเซ็ต"));
         connect(act, &QAction::triggered, this, [this]() {
             QMetaObject::invokeMethod(synthMix, "resetChannel");
         });
@@ -1652,16 +1660,16 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
 
         menu.addSeparator();
 
-        QAction *saveCfg = menu.addAction(tr("บันทึกคอนฟิก (Save config)..."));
+        QAction *saveCfg = menu.addAction(MenuIcons::make(MenuIcons::Save), tr("บันทึกคอนฟิก (Save config)..."));
         connect(saveCfg, &QAction::triggered, this, [this]() { saveConfigFile(); });
-        QAction *openCfg = menu.addAction(tr("เปิดคอนฟิก (Open config)..."));
+        QAction *openCfg = menu.addAction(MenuIcons::make(MenuIcons::Open), tr("เปิดคอนฟิก (Open config)..."));
         connect(openCfg, &QAction::triggered, this, [this]() { openConfigFile(); });
 
         menu.addSeparator();
     }
 
     { // lang menu
-        QMenu *m = menu.addMenu(tr("Language"));
+        QMenu *m = menu.addMenu(MenuIcons::make(MenuIcons::Language), tr("Language"));
 
         QAction *act = m->addAction("ไทย");
         act->setCheckable(true);
@@ -1677,7 +1685,7 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
     }
 
     { // theme menu
-        QMenu *m = menu.addMenu(tr("ธีม / Theme"));
+        QMenu *m = menu.addMenu(MenuIcons::make(MenuIcons::Theme), tr("ธีม / Theme"));
         QActionGroup *grp = new QActionGroup(m);
         QAction *aSys   = m->addAction(tr("ตามธีม Windows"));
         QAction *aDark  = m->addAction(tr("มืด (Dark)"));

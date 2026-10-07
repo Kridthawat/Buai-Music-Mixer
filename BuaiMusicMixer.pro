@@ -125,6 +125,7 @@ HEADERS  += MainWindow.h \
     Widgets/FaderSlider.h \
     Widgets/TitleBar.h \
     Widgets/DialogSkin.h \
+    Widgets/MenuIcons.h \
     Widgets/VSTLabel.h \
     Midi/HNKFile.h \
     BASSFX/FX.h \

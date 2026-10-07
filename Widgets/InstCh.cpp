@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QFontMetrics>
 #include <QScrollBar>
+#include <QStyle>
 #include <QCursor>
 #include <QMouseEvent>
 
@@ -43,11 +44,17 @@ InstCh::InstCh(QWidget *parent) :
     QString fxListScroll = "QScrollBar:vertical {width: 8px;} ";
 
     QScrollBar *bar = ui->fxList->verticalScrollBar();
-    bar->setStyleSheet("QScrollBar:vertical { width: 5px; margin: 0; background: transparent; border: none; }"
+    bar->setStyleSheet("QScrollBar:vertical { width: 5px; margin: 7px 0 7px 0; background: transparent; border: none; }"
                        "QScrollBar::handle:vertical { background: palette(highlight); border-radius: 2px; min-height: 8px; }"
                        "QScrollBar::handle:vertical:hover, QScrollBar::handle:vertical:pressed { background: palette(link); }"
+                       "QScrollBar[hot=\"true\"]::handle:vertical { background: palette(link); }"
                        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { width: 0; height: 0; border: none; background: none; }"
                        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }");
+
+    // Whole FX box lights the scrollbar while the mouse is inside it (or dragging).
+    ui->fxList->installEventFilter(this);
+    ui->fxList->viewport()->installEventFilter(this);
+    bar->installEventFilter(this);
 
     // Selecting / hovering an effect must not tint the row (it changed the colors of the FX label)
     ui->fxList->setFocusPolicy(Qt::NoFocus);
@@ -305,4 +312,22 @@ void InstCh::setBusBadge(int bus)
 int InstCh::fxCount() const
 {
     return ui->fxList->count() - (busItem ? 1 : 0);
+}
+
+
+bool InstCh::eventFilter(QObject *obj, QEvent *e)
+{
+    if (e->type() == QEvent::Enter || e->type() == QEvent::Leave ||
+        e->type() == QEvent::MouseButtonRelease)
+    {
+        QScrollBar *bar = ui->fxList->verticalScrollBar();
+        bool hot = ui->fxList->rect().contains(ui->fxList->mapFromGlobal(QCursor::pos())) || bar->isSliderDown();
+        if (bar->property("hot").toBool() != hot) {
+            bar->setProperty("hot", hot);
+            bar->style()->unpolish(bar);
+            bar->style()->polish(bar);
+            bar->update();
+        }
+    }
+    return QWidget::eventFilter(obj, e);
 }

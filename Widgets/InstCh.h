@@ -54,6 +54,7 @@ signals:
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
+    bool eventFilter(QObject *obj, QEvent *e) override;
 
 private slots:
     void onBtnMuteClicked();

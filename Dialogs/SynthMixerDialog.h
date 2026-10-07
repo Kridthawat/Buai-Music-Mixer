@@ -54,6 +54,7 @@ private slots:
     void showPeakVU(InstrumentType t, int bus, int ch, int note, int velocity);
 
     void showChannelMenu(InstrumentType type, const QPoint &pos);
+    void showBusMenu(InstrumentType type, const QPoint &globalPos);
     void setBusGroup(int group);
     FX* addFX(const QString &uidStr, bool bypass = false);
     void byPassFX(InstrumentType type, int fxIndex, bool bypass);

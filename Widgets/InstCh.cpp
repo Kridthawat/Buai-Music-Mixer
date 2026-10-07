@@ -43,7 +43,11 @@ InstCh::InstCh(QWidget *parent) :
     QString fxListScroll = "QScrollBar:vertical {width: 8px;} ";
 
     QScrollBar *bar = ui->fxList->verticalScrollBar();
-    bar->setStyleSheet(fxListScroll);
+    bar->setStyleSheet("QScrollBar:vertical { width: 5px; margin: 0; background: transparent; border: none; }"
+                       "QScrollBar::handle:vertical { background: palette(link); border-radius: 2px; min-height: 8px; }"
+                       "QScrollBar::handle:vertical:hover { background: palette(highlight); }"
+                       "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { width: 0; height: 0; border: none; background: none; }"
+                       "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }");
 
     // Selecting / hovering an effect must not tint the row (it changed the colors of the FX label)
     ui->fxList->setFocusPolicy(Qt::NoFocus);
@@ -285,6 +289,9 @@ void InstCh::setBusBadge(int bus)
         busItem = new QListWidgetItem();
         busLabel = new VSTLabel(ui->fxList, text, -1, false);
         busLabel->setIndicatorOnly(true);
+        connect(busLabel, &VSTLabel::menuRequested, this, [this](int, const QPoint &pos) {
+            emit busMenuRequested(instType, busLabel->mapToGlobal(pos));
+        });
         ui->fxList->addItem(busItem);
         ui->fxList->setItemWidget(busItem, busLabel);
     } else {

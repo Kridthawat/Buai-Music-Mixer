@@ -813,6 +813,8 @@ void SynthMixerDialog::setChInstDetails()
 
         connect(ich, SIGNAL(menuRequested(InstrumentType,QPoint)),
                 this, SLOT(showChannelMenu(InstrumentType,QPoint)));
+        connect(ich, SIGNAL(busMenuRequested(InstrumentType,QPoint)),
+                this, SLOT(showBusMenu(InstrumentType,QPoint)));
 
         connect(ich, SIGNAL(fxByPassChanged(InstrumentType,int,bool)),
                 this, SLOT(byPassFX(InstrumentType,int,bool)));
@@ -894,6 +896,14 @@ void SynthMixerDialog::showChannelMenu(InstrumentType type, const QPoint &pos)
     connect(signalBFXActionMapper, SIGNAL(mapped(QString)), this, SLOT(addFX(QString)));
 
     menu.exec(chInstMap[type]->mapToGlobal(pos));
+}
+
+void SynthMixerDialog::showBusMenu(InstrumentType type, const QPoint &globalPos)
+{
+    currentType = type;
+    QMenu menu(this);
+    createBusActions(type, &menu);
+    menu.exec(globalPos);
 }
 
 void SynthMixerDialog::setBusGroup(int group)

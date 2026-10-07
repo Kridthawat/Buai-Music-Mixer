@@ -45,6 +45,7 @@ signals:
     void sliderDoubleClicked(InstrumentType type);
 
     void menuRequested(InstrumentType type, const QPoint &pos);
+    void busMenuRequested(InstrumentType type, const QPoint &globalPos);
     void fxRemoveMenuRequested(InstrumentType typr, int fxIndex, const QPoint &pos);
     void fxByPassChanged(InstrumentType type, int fxIndex, bool bypass);
     void fxDoubleClicked(InstrumentType type, int fxIndex);

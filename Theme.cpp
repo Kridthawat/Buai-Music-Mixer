@@ -48,7 +48,7 @@ Colors lightColors()
     c.border = "#9097a6";  c.border2 = "#bcc1cd";
     c.text = "#0f1015";    c.dim = "#6a7080";   c.dimTab = "#3b4150";
     c.accent = "#6d3df0";  c.accentText = "#ffffff";
-    c.title = "#0a78b8";   c.handle = "#c3c7d2";
+    c.title = "#6d3df0";   c.handle = "#c3c7d2";
     c.light = "#ffffff";   c.midlight = "#eceef3"; c.mid = "#b8bcc6";
     c.dark = "#a6abb8";    c.shadow = "#7d8290";
     return c;

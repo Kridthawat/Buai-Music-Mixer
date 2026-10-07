@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <QEvent>
 #include <QGraphicsDropShadowEffect>
+#include <QPainter>
 
 
 VSTLabel::VSTLabel(QWidget *parent, const QString &label, int fxIndex, bool bypass) :
@@ -22,7 +23,18 @@ VSTLabel::VSTLabel(QWidget *parent, const QString &label, int fxIndex, bool bypa
     btnGlow = new QGraphicsDropShadowEffect(ui->btn);
     btnGlow->setOffset(0, 0);
     btnGlow->setBlurRadius(9);
-    ui->btn->setFixedSize(10, 10);
+    ui->btn->setFixedSize(12, 12);
+    ui->btn->installEventFilter(this);
+
+    // small, crisp FX name
+    {
+        QFont f = ui->label->font();
+        f.setPointSizeF(6.5);
+        f.setBold(false);
+        f.setWeight(QFont::Medium);
+        f.setHintingPreference(QFont::PreferFullHinting);
+        ui->label->setFont(f);
+    }
     ui->btn->setGraphicsEffect(btnGlow);
 
     frameGlow = new QGraphicsDropShadowEffect(ui->frame);
@@ -76,21 +88,41 @@ void VSTLabel::updateBtnStyle()
 {
     const bool dark = palette().color(QPalette::Window).lightness() < 128;
 
-    // power light: neon green when the effect is on, dark/dim when bypassed
+    // power light: neon green when the effect is on, dim ring when bypassed (painted in eventFilter)
     const QColor green = dark ? QColor("#39ff88") : QColor("#10c55a");
-
-    if (fxBypass)
-        ui->btn->setStyleSheet(QString("background: transparent; border: 1px solid %1; border-radius: 5px; padding: 0px; min-width: 0px;")
-                               .arg(palette().color(QPalette::Mid).name()));
-    else
-        ui->btn->setStyleSheet(QString("background: %1; border: 1px solid %2; border-radius: 5px; padding: 0px; min-width: 0px;")
-                               .arg(green.name()).arg(green.lighter(140).name()));
 
     QColor glow = green;
     glow.setAlpha(255);
     btnGlow->setColor(glow);
-    btnGlow->setBlurRadius(9);
+    btnGlow->setBlurRadius(8);
     btnGlow->setEnabled(!fxBypass);
+    ui->btn->update();
+}
+
+bool VSTLabel::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->btn && event->type() == QEvent::Paint)
+    {
+        const bool dark = palette().color(QPalette::Window).lightness() < 128;
+        const QColor green = dark ? QColor("#39ff88") : QColor("#10c55a");
+
+        QPainter p(ui->btn);
+        p.setRenderHint(QPainter::Antialiasing);
+        const QRectF r = QRectF(ui->btn->rect()).adjusted(2.5, 2.5, -2.5, -2.5);  // 7px circle
+        if (fxBypass)
+        {
+            p.setPen(QPen(palette().color(QPalette::Mid), 1.2));
+            p.setBrush(Qt::NoBrush);
+        }
+        else
+        {
+            p.setPen(QPen(green.lighter(140), 1.0));
+            p.setBrush(green);
+        }
+        p.drawEllipse(r);
+        return true;
+    }
+    return QWidget::eventFilter(obj, event);
 }
 
 void VSTLabel::mouseDoubleClickEvent(QMouseEvent *event)

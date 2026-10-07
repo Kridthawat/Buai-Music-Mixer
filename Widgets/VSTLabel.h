@@ -29,6 +29,7 @@ signals:
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
     void changeEvent(QEvent *event);
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private slots:
     void on_btn_clicked();

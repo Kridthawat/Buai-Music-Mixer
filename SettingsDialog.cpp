@@ -575,10 +575,14 @@ void SettingsDialog::on_cbMidiIn_activated(int index)
         settings->setValue("MidiInName", index > 0 ? ui->cbMidiIn->itemText(index) : QString());
         return;
     }
+    // Changing the port while notes/program changes are streaming leaves the synth
+    // with lost instrument assignments (everything turns to piano), so stop first.
+    mainWin->stop();
     mainWin->midiPlayer()->setMidiIn(index-1);
     ui->cbMidiIn->setCurrentIndex(mainWin->midiPlayer()->midiInPortNumber() + 1);
-    settings->setValue("MidiIn", index-1);
-    settings->setValue("MidiInName", index > 0 ? ui->cbMidiIn->itemText(index) : QString());
+    int cur = ui->cbMidiIn->currentIndex();
+    settings->setValue("MidiIn", cur-1);
+    settings->setValue("MidiInName", cur > 0 ? ui->cbMidiIn->itemText(cur) : QString());
 }
 
 void SettingsDialog::on_cbAudioOut_activated(int index)

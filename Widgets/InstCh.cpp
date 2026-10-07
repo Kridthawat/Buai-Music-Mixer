@@ -3,6 +3,7 @@
 
 #include "VSTLabel.h"
 #include <QToolTip>
+#include <QTimer>
 #include <QEvent>
 #include <QLabel>
 #include <QFontMetrics>
@@ -19,11 +20,12 @@ InstCh::InstCh(QWidget *parent) :
 
     // "Bus N" badge shown inside the FX box when the channel is routed to a bus group
     busBadge = new QLabel(ui->fxList);
-    busBadge->setAlignment(Qt::AlignCenter);
+    busBadge->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     busBadge->setAttribute(Qt::WA_TransparentForMouseEvents);
     QFont bf = busBadge->font();
     bf.setPointSizeF(6.5);
-    bf.setBold(true);
+    bf.setBold(false);
+    bf.setWeight(QFont::Medium);
     bf.setHintingPreference(QFont::PreferFullHinting);
     busBadge->setFont(bf);
     busBadge->hide();
@@ -119,6 +121,7 @@ void InstCh::addFXLabel(const QString &label, int fxIndex, bool bypass)
 
     ui->fxList->addItem(item);
     ui->fxList->setItemWidget(item, vstLabel);
+    QTimer::singleShot(0, this, [this]() { placeBusBadge(); });
 }
 
 void InstCh::removeVSTLabel(int fxIndex)
@@ -127,6 +130,7 @@ void InstCh::removeVSTLabel(int fxIndex)
     QWidget *widget = ui->fxList->itemWidget(item);
     delete widget;
     delete item;
+    QTimer::singleShot(0, this, [this]() { placeBusBadge(); });
 
     for (int i=fxIndex; i<ui->fxList->count(); i++) {
         item = ui->fxList->item(i);
@@ -289,6 +293,7 @@ void InstCh::setBusBadge(int bus)
 
 void InstCh::styleBusBadge()
 {
+    // same look as an FX row (VSTLabel), just without the green power light
     const QColor neon = palette().color(QPalette::Link);
     const bool dark = palette().color(QPalette::Window).lightness() < 128;
     const QString key = neon.name() + (dark ? "d" : "l");
@@ -296,18 +301,36 @@ void InstCh::styleBusBadge()
         return;
     busBadgeKey = key;
     const QColor txt = dark ? neon.lighter(150) : neon;
-    busBadge->setStyleSheet(QString("QLabel { color: %1; background: rgba(%2,%3,%4,%5);"
-                                    " border: 1px solid %6; border-radius: 5px; padding: 0px 3px; }")
+    busBadge->setStyleSheet(QString("QLabel { color: %1; background: rgba(%2,%3,%4,30);"
+                                    " border: 1px solid %5; border-radius: 4px; padding: 0px 4px; }")
                             .arg(txt.name()).arg(neon.red()).arg(neon.green()).arg(neon.blue())
-                            .arg(dark ? 45 : 28).arg(neon.name()));
-    busBadge->adjustSize();
+                            .arg(neon.name()));
 }
 
+// the badge sits right below the last FX row, with the same size as an FX row
 void InstCh::placeBusBadge()
 {
-    busBadge->adjustSize();
-    QRect r = ui->fxList->rect();
-    busBadge->move(r.right() - busBadge->width() - 3, r.bottom() - busBadge->height() - 3);
+    if (!busBadge)
+        return;
+
+    QWidget *vp = ui->fxList->viewport();
+    int n = ui->fxList->count();
+    int x = 1, y = 1, w = vp->width() - 2, h = 16;
+
+    if (n > 0) {
+        QListWidgetItem *last = ui->fxList->item(n - 1);
+        QWidget *lw = ui->fxList->itemWidget(last);
+        QRect r = ui->fxList->visualItemRect(last);
+        if (lw) {
+            x = r.x();
+            w = lw->width() > 0 ? lw->width() : r.width();
+            h = lw->height() > 0 ? lw->height() : h;
+        }
+        y = r.bottom() + 2;
+    }
+
+    QPoint p = vp->mapTo(ui->fxList, QPoint(x, y));
+    busBadge->setGeometry(p.x(), p.y(), w, h);
 }
 
 bool InstCh::eventFilter(QObject *obj, QEvent *event)

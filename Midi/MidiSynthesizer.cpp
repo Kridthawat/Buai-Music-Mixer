@@ -10,6 +10,7 @@
 #include "BASSFX/VSTFX.h"
 
 #include <cstring>
+#include "Midi/MidiPlayer.h"
 
 QMap<int, QString> MidiSynthesizer::outDevices;
 
@@ -90,6 +91,14 @@ MidiSynthesizer::MidiSynthesizer(QObject *parent) : QObject(parent)
 MidiSynthesizer::~MidiSynthesizer()
 {
     timer.stop();
+
+    for (MidiOut *o : extPorts.values()) {
+        if (o) {
+            try { o->closePort(); } catch (...) {}
+            delete o;
+        }
+    }
+    extPorts.clear();
 
     if (openned)
         close();
@@ -509,6 +518,11 @@ void MidiSynthesizer::sendNoteOff(int ch, int note, int velocity)
     if (note < 0 || note > 127)
         return;
 
+    if (MidiOut *xo = extPort(typeOf(ch, note))) {
+        xo->sendNoteOff(ch, note, velocity);
+        return;
+    }
+
     if (ch == 9)
     {
         int vstiIndex = instMap[MidiHelper::getInstrumentDrumType(note)].vsti;
@@ -541,6 +555,11 @@ void MidiSynthesizer::sendNoteOn(int ch, int note, int velocity)
 {
     if (note < 0 || note > 127)
         return;
+
+    if (MidiOut *xo = extPort(typeOf(ch, note))) {
+        xo->sendNoteOn(ch, note, velocity);
+        return;
+    }
 
     if (ch == 9)
     {
@@ -585,6 +604,11 @@ void MidiSynthesizer::sendNoteAftertouch(int ch, int note, int value)
     if (note < 0 || note > 127)
         return;
 
+    if (MidiOut *xo = extPort(typeOf(ch, note))) {
+        xo->sendNoteAftertouch(ch, note, value);
+        return;
+    }
+
     if (ch == 9)
     {
         int vstiIndex = instMap[MidiHelper::getInstrumentDrumType(note)].vsti;
@@ -615,6 +639,13 @@ void MidiSynthesizer::sendNoteAftertouch(int ch, int note, int value)
 
 void MidiSynthesizer::sendController(int ch, int number, int value)
 {
+    if (!extOutName.isEmpty() && ch >= 0 && ch < 16) {
+        if (ch == 9)
+            extTeeAll(0xB0 | ch, number & 0x7F, value & 0x7F);
+        else if (MidiOut *xo = extPort(chInstType[ch]))
+            xo->sendController(ch, number, value);
+    }
+
     if (ignoreDrumPitch && ch == 9)
     {
         switch (number) {
@@ -733,6 +764,11 @@ void MidiSynthesizer::sendController(int ch, int number, int value)
 
 void MidiSynthesizer::sendProgramChange(int ch, int number)
 {
+    if (!extOutName.isEmpty() && ch >= 0 && ch < 16 && ch != 9) {
+        if (MidiOut *xo = extPort(MidiHelper::getInstrumentType(number)))
+            xo->sendProgramChange(ch, number);
+    }
+
     sendToAllMidiStream(ch, MIDI_EVENT_PROGRAM, number);
 
     if (ch != 9) {
@@ -743,11 +779,25 @@ void MidiSynthesizer::sendProgramChange(int ch, int number)
 
 void MidiSynthesizer::sendChannelAftertouch(int ch, int value)
 {
+    if (!extOutName.isEmpty() && ch >= 0 && ch < 16) {
+        if (ch == 9)
+            extTeeAll(0xD0 | ch, value & 0x7F, 0, true);
+        else if (MidiOut *xo = extPort(chInstType[ch]))
+            xo->sendChannelAftertouch(ch, value);
+    }
+
     sendToAllMidiStream(ch, MIDI_EVENT_CHANPRES, value);
 }
 
 void MidiSynthesizer::sendPitchBend(int ch, int value)
 {
+    if (!extOutName.isEmpty() && ch >= 0 && ch < 16 && ch != 9) {
+        if (MidiOut *xo = extPort(chInstType[ch])) {
+            xo->sendPitchBend(ch, value);
+            return;
+        }
+    }
+
     if (ch == 9)
     {
         if (ignoreDrumPitch)
@@ -771,6 +821,8 @@ void MidiSynthesizer::sendPitchBend(int ch, int value)
 
 void MidiSynthesizer::sendAllNotesOff(int ch)
 {
+    if (!extOutName.isEmpty() && ch >= 0 && ch < 16)
+        extTeeAll(0xB0 | ch, 123, 0);
     sendToAllMidiStream(ch, MIDI_EVENT_NOTESOFF, 0);
 }
 
@@ -783,6 +835,8 @@ void MidiSynthesizer::sendAllNotesOff()
 
 void MidiSynthesizer::sendResetAllControllers(int ch)
 {
+    if (!extOutName.isEmpty() && ch >= 0 && ch < 16)
+        extTeeAll(0xB0 | ch, 121, 0);
     sendToAllMidiStream(ch, MIDI_EVENT_RESET, 0);
     sendToAllMidiStream(ch, MIDI_EVENT_PITCHRANGE, 2);
 }
@@ -1548,5 +1602,71 @@ HSTREAM MidiSynthesizer::getDrumHandleFromNote(int drumNote)
 
     default:
         return handles[InstrumentType::PercussionEtc];
+    }
+}
+
+
+void MidiSynthesizer::setExtMidiOut(InstrumentType t, const QString &deviceName)
+{
+    if (deviceName.isEmpty()) {
+        extOutName.remove(t);
+        return;
+    }
+
+    if (!extPorts.contains(deviceName)) {
+        int idx = MidiPlayer::midiDevices().indexOf(deviceName);
+        MidiOut *out = nullptr;
+        if (idx >= 0) {
+            try {
+                out = new MidiOut();
+                out->openPort(idx);
+                if (!out->isPortOpen()) {
+                    delete out;
+                    out = nullptr;
+                }
+            } catch (...) {
+                delete out;
+                out = nullptr;
+            }
+        }
+        if (out == nullptr) {       // device missing or busy -> fall back to internal sound
+            extOutName.remove(t);
+            return;
+        }
+        extPorts[deviceName] = out;
+    }
+
+    extOutName[t] = deviceName;
+}
+
+MidiOut *MidiSynthesizer::extPort(InstrumentType t)
+{
+    if (extOutName.isEmpty())
+        return nullptr;
+    auto it = extOutName.constFind(t);
+    if (it == extOutName.constEnd())
+        return nullptr;
+    return extPorts.value(it.value(), nullptr);
+}
+
+InstrumentType MidiSynthesizer::typeOf(int ch, int note)
+{
+    if (ch == 9)
+        return MidiHelper::getInstrumentDrumType(note);
+    return chInstType[ch];
+}
+
+void MidiSynthesizer::extTeeAll(int status, int d1, int d2, bool oneData)
+{
+    // send one raw message to every external port in use
+    std::vector<unsigned char> m;
+    m.push_back((unsigned char)status);
+    m.push_back((unsigned char)d1);
+    if (!oneData)
+        m.push_back((unsigned char)d2);
+    for (MidiOut *o : extPorts.values()) {
+        if (o) {
+            try { o->sendMessage(&m); } catch (...) {}
+        }
     }
 }

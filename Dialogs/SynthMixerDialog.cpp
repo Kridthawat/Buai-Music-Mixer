@@ -281,6 +281,7 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
             synth->setMute(t, m);
             synth->setSolo(t, s);
             synth->setUseVSTi(t, v);
+            synth->setExtMidiOut(t, st.value("ExtMidiOut", "").toString());
             synth->setSpeaker(t, static_cast<SpeakerType>(sp));
 
             #ifdef __linux__
@@ -487,6 +488,7 @@ void SynthMixerDialog::settingValues()
         st.setValue("Solo", synth->isSolo(t));
         st.setValue("Bus", synth->busGroup(t));
         st.setValue("VSTi", synth->useVSTi(t));
+        st.setValue("ExtMidiOut", synth->extMidiOut(t));
 
         QVariant v = QVariant::fromValue(synth->fxUids(t));
         st.setValue("VstUid", v);

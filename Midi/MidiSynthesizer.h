@@ -11,6 +11,7 @@
 #include <bass_fx.h>
 
 #include "Midi/MidiHelper.h"
+#include "Midi/MidiOut.h"
 #include "BASSFX/FX.h"
 #include "BASSFX/Equalizer31BandFX.h"
 #include "BASSFX/Chorus2FX.h"
@@ -122,6 +123,11 @@ public:
     void setUseVSTi(InstrumentType t, int vstiIndex);
     void setSpeaker(InstrumentType t, SpeakerType speaker);
 
+    // External MIDI out per instrument (empty name = internal synth only).
+    // When set, that instrument's notes are sent to the device instead of the SoundFont.
+    void setExtMidiOut(InstrumentType t, const QString &deviceName);
+    QString extMidiOut(InstrumentType t) { return extOutName.value(t); }
+
 
     static QStringList audioDevices();
     static void audioDevices(const QMap<int, QString> &devices);
@@ -188,6 +194,12 @@ private:
     HSTREAM getDrumHandleFromNote(int drumNote);
 
 private:
+    MidiOut *extPort(InstrumentType t);
+    InstrumentType typeOf(int ch, int note);
+    void extTeeAll(int status, int d1, int d2, bool oneData = false);
+    QMap<InstrumentType, QString> extOutName;
+    QMap<QString, MidiOut*> extPorts;
+
     QTimer timer;
 
     QList<MixerHandle> mixers;

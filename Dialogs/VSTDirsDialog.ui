@@ -562,6 +562,11 @@
            <string>VST instruments</string>
           </property>
          </column>
+         <column>
+          <property name="text">
+           <string>MIDI Out</string>
+          </property>
+         </column>
         </widget>
        </item>
       </layout>

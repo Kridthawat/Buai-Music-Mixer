@@ -10,6 +10,7 @@
 #include "BASSFX/VSTFX.h"
 #include "Dialogs/VSTDialog.h"
 #include "Utils.h"
+#include "Midi/MidiPlayer.h"
 #include "Config.h"
 
 
@@ -79,6 +80,8 @@ VSTDirsDialog::VSTDirsDialog(QWidget *parent, MainWindow *mainWindow) :
             ui->tableVSTiUsed->insertRow(i);
             ui->tableVSTiUsed->setItem(i, 0, nameItem);
             ui->tableVSTiUsed->setItem(i, 1, vstiItem);
+            ui->tableVSTiUsed->setItem(i, 2, new QTableWidgetItem(
+                synth->extMidiOut(t).isEmpty() ? tr("ใช้เสียงในโปรแกรม") : synth->extMidiOut(t)));
             i++;
         }
 
@@ -405,6 +408,18 @@ void VSTDirsDialog::showVSTiSelectMenu(const QPoint &pos)
 
     connect(vstiSignalMapper, SIGNAL(mapped(int)), this, SLOT(setVSTiUsed(int)));
 
+    // External MIDI out for the selected instrument(s)
+    menu.addSeparator();
+    QMenu *midiMenu = menu.addMenu(tr("MIDI Out ภายนอก"));
+    QStringList outs = MidiPlayer::midiDevices();
+    QAction *none = midiMenu->addAction(tr("ไม่ใช้ (ใช้เสียงในโปรแกรม)"));
+    connect(none, &QAction::triggered, this, [this]() { setExtMidiOutSelected(QString()); });
+    midiMenu->addSeparator();
+    for (const QString &name : outs) {
+        QAction *a = midiMenu->addAction(name);
+        connect(a, &QAction::triggered, this, [this, name]() { setExtMidiOutSelected(name); });
+    }
+
     menu.exec(ui->tableVSTiUsed->mapToGlobal(pos));
 
     delete vstiSignalMapper;
@@ -453,4 +468,26 @@ void VSTDirsDialog::setVSTiUsed(int selected)
             break;
         }
     }
+}
+
+
+void VSTDirsDialog::setExtMidiOutSelected(const QString &deviceName)
+{
+    // stop first: changing the routing while notes are sounding leaves hanging notes
+    if (synth->isOpened() && mainWindow->midiPlayer()->isPlayerPlaying())
+        mainWindow->stop();
+
+    QModelIndexList indexList = ui->tableVSTiUsed->selectionModel()->selectedRows();
+    for (QModelIndex index : indexList)
+    {
+        InstrumentType type = static_cast<InstrumentType>(index.row());
+        synth->setExtMidiOut(type, deviceName);
+
+        // show what is really active (a busy/missing device falls back to internal)
+        QString now = synth->extMidiOut(type);
+        QTableWidgetItem *item = ui->tableVSTiUsed->item(index.row(), 2);
+        if (item)
+            item->setText(now.isEmpty() ? tr("ใช้เสียงในโปรแกรม") : now);
+    }
+    synth->sendAllNotesOff();
 }

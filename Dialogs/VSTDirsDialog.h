@@ -49,6 +49,7 @@ private slots:
     // VSTi used tab
     void showVSTiSelectMenu(const QPoint &pos);
     void setVSTiUsed(int selected);
+    void setExtMidiOutSelected(const QString &deviceName);
 
 private:
     Ui::VSTDirsDialog *ui;

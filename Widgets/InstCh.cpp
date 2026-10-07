@@ -44,8 +44,8 @@ InstCh::InstCh(QWidget *parent) :
 
     QScrollBar *bar = ui->fxList->verticalScrollBar();
     bar->setStyleSheet("QScrollBar:vertical { width: 5px; margin: 0; background: transparent; border: none; }"
-                       "QScrollBar::handle:vertical { background: palette(link); border-radius: 2px; min-height: 8px; }"
-                       "QScrollBar::handle:vertical:hover { background: palette(highlight); }"
+                       "QScrollBar::handle:vertical { background: palette(highlight); border-radius: 2px; min-height: 8px; }"
+                       "QScrollBar::handle:vertical:hover, QScrollBar::handle:vertical:pressed { background: palette(link); }"
                        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { width: 0; height: 0; border: none; background: none; }"
                        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }");
 

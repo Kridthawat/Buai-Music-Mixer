@@ -251,7 +251,7 @@ protected:
     {
         QPainter p(this);
         QColor c = palette().color(QPalette::Link);
-        c.setAlpha(130);
+        c.setAlpha(210);
         p.setPen(QPen(c, 1));
         p.setRenderHint(QPainter::Antialiasing);
         p.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), 10, 10);

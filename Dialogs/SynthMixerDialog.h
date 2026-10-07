@@ -38,6 +38,7 @@ public:
     void setSkipSave(bool skip) { skipSave = skip; }
 
 public slots:
+    void syncQuickChecks();
     void settingValues();
     void setSoundfontPresets(int presets);
 
@@ -106,6 +107,10 @@ private:
     Qt::Edges edgesAt(const QPoint &pos) const;
     class QSlider *masterSlider = nullptr;
     class QLabel  *masterValue  = nullptr;
+    class QCheckBox *chkLockDrum = nullptr;
+    class QCheckBox *chkLockSnare = nullptr;
+    class QCheckBox *chkLockBass = nullptr;
+    class QCheckBox *chkNoTune = nullptr;
 
     void mapChInstUI();
     void setChInstDetails();

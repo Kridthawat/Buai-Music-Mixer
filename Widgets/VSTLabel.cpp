@@ -21,7 +21,8 @@ VSTLabel::VSTLabel(QWidget *parent, const QString &label, int fxIndex, bool bypa
     // neon glow (colors follow the theme)
     btnGlow = new QGraphicsDropShadowEffect(ui->btn);
     btnGlow->setOffset(0, 0);
-    btnGlow->setBlurRadius(14);
+    btnGlow->setBlurRadius(9);
+    ui->btn->setFixedSize(10, 10);
     ui->btn->setGraphicsEffect(btnGlow);
 
     frameGlow = new QGraphicsDropShadowEffect(ui->frame);
@@ -79,16 +80,16 @@ void VSTLabel::updateBtnStyle()
     const QColor green = dark ? QColor("#39ff88") : QColor("#10c55a");
 
     if (fxBypass)
-        ui->btn->setStyleSheet(QString("background: transparent; border: 1px solid %1; border-radius: 6px;")
+        ui->btn->setStyleSheet(QString("background: transparent; border: 1px solid %1; border-radius: 5px; padding: 0px; min-width: 0px;")
                                .arg(palette().color(QPalette::Mid).name()));
     else
-        ui->btn->setStyleSheet(QString("background: %1; border: 1px solid %2; border-radius: 6px;")
+        ui->btn->setStyleSheet(QString("background: %1; border: 1px solid %2; border-radius: 5px; padding: 0px; min-width: 0px;")
                                .arg(green.name()).arg(green.lighter(140).name()));
 
     QColor glow = green;
     glow.setAlpha(255);
     btnGlow->setColor(glow);
-    btnGlow->setBlurRadius(16);
+    btnGlow->setBlurRadius(9);
     btnGlow->setEnabled(!fxBypass);
 }
 

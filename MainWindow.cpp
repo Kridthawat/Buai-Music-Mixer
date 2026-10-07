@@ -1703,6 +1703,7 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
     menu.addAction(&actionExit);
 
     menu.exec(globalPos);
+    QMetaObject::invokeMethod(synthMix, "syncQuickChecks");
 }
 
 void MainWindow::showSettingsDialog()

@@ -80,6 +80,14 @@ int main(int argc, char *argv[])
     Theme::init(a);
     a.installEventFilter(new DialogSkin(&a));
 
+    // crisper text rendering
+    {
+        QFont f = a.font();
+        f.setHintingPreference(QFont::PreferFullHinting);
+        f.setStyleStrategy(QFont::PreferAntialias);
+        a.setFont(f);
+    }
+
 
     // Add font for linux
     #ifdef __linux__

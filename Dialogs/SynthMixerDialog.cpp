@@ -10,6 +10,8 @@
 #include <QContextMenuEvent>
 #include <QScrollBar>
 #include <QSlider>
+#include <QCheckBox>
+#include <QSettings>
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QWindow>
@@ -83,6 +85,44 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
         masterValue->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
 
         int pos = ui->horizontalLayout_2->indexOf(ui->btnMenu);
+
+        // Quick switches (same settings as the main settings window / menu)
+        auto addChk = [this, pos](const QString &text, const QString &tip) {
+            QCheckBox *cb = new QCheckBox(text, this);
+            cb->setToolTip(tip);
+            cb->setFocusPolicy(Qt::NoFocus);
+            ui->horizontalLayout_2->insertWidget(pos, cb);
+            return cb;
+        };
+        chkLockDrum  = addChk(tr("ล็อกกลอง"),  tr("ล็อกเสียงกลอง (ตั้งชุดกลองในหน้าตั้งค่า)"));
+        chkLockSnare = addChk(tr("ล็อกสแนร์"), tr("ล็อกเสียงสแนร์ (ตั้งเบอร์เสียงในหน้าตั้งค่า)"));
+        chkLockBass  = addChk(tr("ล็อกเบส"),   tr("ล็อกเสียงเบส (ตั้งเบอร์เสียงในหน้าตั้งค่า)"));
+        chkNoTune    = addChk(tr("ตัดจูนกลอง"), tr("ตัดคำสั่งจูนเสียงกลอง/สแนร์ (ช่อง 10)"));
+        ui->horizontalLayout_2->insertSpacing(pos + 4, 14);
+
+        syncQuickChecks();
+
+        connect(chkLockDrum, &QCheckBox::clicked, this, [this](bool on) {
+            QSettings st(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+            player->setLockDrum(on, st.value("MidiLockDrumNumber", 0).toInt());
+            st.setValue("MidiLockDrum", on);
+        });
+        connect(chkLockSnare, &QCheckBox::clicked, this, [this](bool on) {
+            QSettings st(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+            player->setLockSnare(on, st.value("MidiLockSnareNumber", 38).toInt());
+            st.setValue("MidiLockSnare", on);
+        });
+        connect(chkLockBass, &QCheckBox::clicked, this, [this](bool on) {
+            QSettings st(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+            player->setLockBass(on, st.value("MidiLockBassNumber", 32).toInt());
+            st.setValue("MidiLockBass", on);
+        });
+        connect(chkNoTune, &QCheckBox::clicked, this, [this](bool on) {
+            QSettings st(Config::CONFIG_APP_FILE_PATH, QSettings::IniFormat);
+            player->midiSynthesizer()->setIgnoreDrumPitch(on);
+            st.setValue("IgnoreDrumPitch", on);
+        });
+
         ui->horizontalLayout_2->insertWidget(pos, masterValue);
         ui->horizontalLayout_2->insertWidget(pos, masterSlider);
         ui->horizontalLayout_2->insertWidget(pos, lbMaster);
@@ -555,8 +595,24 @@ void SynthMixerDialog::showPeakVU(InstrumentType t, int bus,  int ch, int note, 
     }
 }
 
+void SynthMixerDialog::syncQuickChecks()
+{
+    if (!chkLockDrum)
+        return;
+    const QList<QCheckBox *> boxes = { chkLockDrum, chkLockSnare, chkLockBass, chkNoTune };
+    for (QCheckBox *b : boxes)
+        b->blockSignals(true);
+    chkLockDrum->setChecked(player->isLockDrum());
+    chkLockSnare->setChecked(player->isLockSnare());
+    chkLockBass->setChecked(player->isLockBass());
+    chkNoTune->setChecked(player->midiSynthesizer()->isIgnoreDrumPitch());
+    for (QCheckBox *b : boxes)
+        b->blockSignals(false);
+}
+
 void SynthMixerDialog::showEvent(QShowEvent *)
 {
+    syncQuickChecks();
     connect(synth, SIGNAL(noteOnSended(InstrumentType,int,int,int,int)),
             this, SLOT(showPeakVU(InstrumentType,int,int,int,int)));
 }
@@ -1064,7 +1120,7 @@ void SynthMixerDialog::paintEvent(QPaintEvent *event)
     // thin neon outline, since the window has no system frame
     QPainter p(this);
     QColor c = palette().color(QPalette::Link);
-    c.setAlpha(120);
+    c.setAlpha(210);
     p.setRenderHint(QPainter::Antialiasing);
     p.setPen(QPen(c, 1));
     p.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5), 10, 10);

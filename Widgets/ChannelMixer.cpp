@@ -5,6 +5,7 @@
 #include "Dialogs/SettingVuDialog.h"
 
 #include <QPainter>
+#include <QLinearGradient>
 #include <QToolTip>
 #include <QCursor>
 #include <QSettings>
@@ -13,11 +14,26 @@
 #include "Config.h"
 
 
-void BackgroundChMx::paintEvent(QPaintEvent *event)
+void BackgroundChMx::paintEvent(QPaintEvent *)
 {
+    // slim, themed divider between tracks (was a solid bright rectangle)
     QPainter p(this);
-    p.setBrush(palette().color(QPalette::Text));
-    p.drawRect(rect());
+    const bool dark = palette().color(QPalette::Window).lightness() < 128;
+    QColor bg = palette().color(QPalette::Window);
+    p.fillRect(rect(), dark ? bg.darker(130) : bg.darker(108));
+
+    QColor neon = palette().color(QPalette::Link);
+    QLinearGradient g(0, 0, 0, height());
+    QColor c0 = neon, c1 = neon, c2 = neon;
+    c0.setAlpha(30);
+    c1.setAlpha(dark ? 150 : 120);
+    c2.setAlpha(30);
+    g.setColorAt(0.0, c0);
+    g.setColorAt(0.5, c1);
+    g.setColorAt(1.0, c2);
+    p.setPen(QPen(QBrush(g), 1));
+    p.drawLine(0, 0, 0, height() - 1);
+    p.drawLine(width() - 1, 0, width() - 1, height() - 1);
     p.end();
 }
 

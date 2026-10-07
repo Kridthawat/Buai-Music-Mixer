@@ -31,9 +31,9 @@ Colors darkColors()
     Colors c;
     c.window = "#101114";  c.base = "#17181c";  c.altBase = "#1d1f24";
     c.button = "#23252c";  c.buttonHover = "#2e3139";
-    c.border = "#3a3d46";  c.border2 = "#2a2d35";
-    c.text = "#e8eaed";    c.dim = "#6b7080";   c.dimTab = "#9aa0ae";
-    c.accent = "#8b5cf6";  c.accentText = "#ffffff";
+    c.border = "#4f5463";  c.border2 = "#363a46";
+    c.text = "#f4f6fa";    c.dim = "#8a90a0";   c.dimTab = "#b8bece";
+    c.accent = "#0a8aa6";  c.accentText = "#ffffff";
     c.title = "#22d3ee";   c.handle = "#3a3d46";
     c.light = "#30333b";   c.midlight = "#2a2d35"; c.mid = "#4a4e5a";
     c.dark = "#0b0b0d";    c.shadow = "#6b7080";
@@ -45,10 +45,10 @@ Colors lightColors()
     Colors c;
     c.window = "#f2f3f7";  c.base = "#ffffff";  c.altBase = "#f6f7fa";
     c.button = "#e9ebf1";  c.buttonHover = "#dfe2ea";
-    c.border = "#c3c7d2";  c.border2 = "#d6d9e2";
-    c.text = "#1b1c20";    c.dim = "#8a8f9c";   c.dimTab = "#555b69";
+    c.border = "#9097a6";  c.border2 = "#bcc1cd";
+    c.text = "#0f1015";    c.dim = "#6a7080";   c.dimTab = "#3b4150";
     c.accent = "#6d3df0";  c.accentText = "#ffffff";
-    c.title = "#6d3df0";   c.handle = "#c3c7d2";
+    c.title = "#0a78b8";   c.handle = "#c3c7d2";
     c.light = "#ffffff";   c.midlight = "#eceef3"; c.mid = "#b8bcc6";
     c.dark = "#a6abb8";    c.shadow = "#7d8290";
     return c;

@@ -4,7 +4,7 @@
 ; Expected layout:  deploy\x86\  (BuaiMusicMixer.exe + Qt/BASS dlls, see .github\workflows\build-windows.yml)
 
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #define AppVersion "1.2.0"
 #endif
 #define MyAppName "Buai Music Mixer"
 #define MyAppPublisher "Buai Music"

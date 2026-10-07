@@ -76,7 +76,7 @@ jobs:
         shell: pwsh
         run: |
           choco install innosetup -y --no-progress
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.1.0" "_iss_setup\buai-mixer-${{ matrix.arch }}.iss"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=1.2.0" "_iss_setup\buai-mixer-${{ matrix.arch }}.iss"
 
       - uses: actions/upload-artifact@v4
         with:

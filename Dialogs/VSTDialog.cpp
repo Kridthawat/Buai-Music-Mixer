@@ -8,6 +8,10 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
 {
     this->fxHandle = fxHandle;
 
+    // The plug-in editor is embedded over the whole client area, so the app's custom
+    // title bar would be hidden under it (no close button). Keep the native frame.
+    setProperty("buaiNoSkin", true);
+
     BASS_VST_INFO info;
     if (BASS_VST_GetInfo(fxHandle, &info) && info.hasEditor)
     {

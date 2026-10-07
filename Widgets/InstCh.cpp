@@ -3,6 +3,8 @@
 
 #include "VSTLabel.h"
 #include <QToolTip>
+#include <QEvent>
+#include <QLabel>
 #include <QFontMetrics>
 #include <QScrollBar>
 #include <QCursor>
@@ -14,6 +16,18 @@ InstCh::InstCh(QWidget *parent) :
     ui(new Ui::InstCh)
 {
     ui->setupUi(this);
+
+    // "Bus N" badge shown inside the FX box when the channel is routed to a bus group
+    busBadge = new QLabel(ui->fxList);
+    busBadge->setAlignment(Qt::AlignCenter);
+    busBadge->setAttribute(Qt::WA_TransparentForMouseEvents);
+    QFont bf = busBadge->font();
+    bf.setPointSizeF(6.5);
+    bf.setBold(true);
+    bf.setHintingPreference(QFont::PreferFullHinting);
+    busBadge->setFont(bf);
+    busBadge->hide();
+    ui->fxList->installEventFilter(this);
 
     // instrument name: slightly smaller font, fixed height so every strip stays aligned
     {
@@ -255,4 +269,60 @@ void InstCh::onFxByPassChanged(int fxIndex, bool bypass)
 void InstCh::onFxDoubleClicked(int fxIndex)
 {
     emit fxDoubleClicked(instType, fxIndex);
+}
+
+void InstCh::setBusBadge(int bus)
+{
+    busValue = bus;
+    if (bus < 0) {
+        busBadge->hide();
+        return;
+    }
+    busBadge->setText(QString("Bus%1").arg(bus + 1));
+    busBadge->setToolTip(tr("ส่งออกไปที่ Bus Group %1").arg(bus + 1));
+    busBadgeKey.clear();
+    styleBusBadge();
+    placeBusBadge();
+    busBadge->show();
+    busBadge->raise();
+}
+
+void InstCh::styleBusBadge()
+{
+    const QColor neon = palette().color(QPalette::Link);
+    const bool dark = palette().color(QPalette::Window).lightness() < 128;
+    const QString key = neon.name() + (dark ? "d" : "l");
+    if (key == busBadgeKey)
+        return;
+    busBadgeKey = key;
+    const QColor txt = dark ? neon.lighter(150) : neon;
+    busBadge->setStyleSheet(QString("QLabel { color: %1; background: rgba(%2,%3,%4,%5);"
+                                    " border: 1px solid %6; border-radius: 5px; padding: 0px 3px; }")
+                            .arg(txt.name()).arg(neon.red()).arg(neon.green()).arg(neon.blue())
+                            .arg(dark ? 45 : 28).arg(neon.name()));
+    busBadge->adjustSize();
+}
+
+void InstCh::placeBusBadge()
+{
+    busBadge->adjustSize();
+    QRect r = ui->fxList->rect();
+    busBadge->move(r.right() - busBadge->width() - 3, r.bottom() - busBadge->height() - 3);
+}
+
+bool InstCh::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->fxList && event->type() == QEvent::Resize && busBadge)
+        placeBusBadge();
+    return QWidget::eventFilter(obj, event);
+}
+
+void InstCh::changeEvent(QEvent *event)
+{
+    if ((event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange)
+            && busBadge && busValue >= 0) {
+        styleBusBadge();
+        placeBusBadge();
+    }
+    QWidget::changeEvent(event);
 }

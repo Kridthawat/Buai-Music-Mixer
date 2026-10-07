@@ -113,6 +113,8 @@ void BusDialog::setBus(int b)
         item->setText(busNames()[b+1]);
         InstrumentType type = static_cast<InstrumentType>(index.row());
         synth->setBusGroup(type, b);
+        if (chInstMap->contains(type))
+            chInstMap->value(type)->setBusBadge(b);
     }
 }
 

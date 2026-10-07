@@ -272,6 +272,7 @@ SynthMixerDialog::SynthMixerDialog(QWidget *parent, MainWindow *mainWin) : //, M
 
             synth->setDevice(t, dv);
             synth->setBusGroup(t, b);
+            ich->setBusBadge(b);
             synth->setVolume(t, ml);
             synth->setMute(t, m);
             synth->setSolo(t, s);
@@ -868,6 +869,8 @@ void SynthMixerDialog::showChannelMenu(InstrumentType type, const QPoint &pos)
 void SynthMixerDialog::setBusGroup(int group)
 {
     synth->setBusGroup(currentType, group);
+    if (chInstMap.contains(currentType))
+        chInstMap[currentType]->setBusBadge(group);
 }
 
 FX* SynthMixerDialog::addFX(const QString &uidStr, bool bypass)

@@ -36,6 +36,7 @@ public slots:
     void setSoloButton(bool s);
     void setSliderLevel(int v);
     void peak(int v);
+    void setBusBadge(int bus);   // bus: -1 = Master (badge hidden), 0.. = Bus 1..
 
 signals:
     void muteChanged(InstrumentType type, bool m);
@@ -64,7 +65,16 @@ private slots:
     void onFxByPassChanged(int fxIndex, bool bypass);
     void onFxDoubleClicked(int fxIndex);
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+    void changeEvent(QEvent *event) override;
+
 private:
+    class QLabel *busBadge = nullptr;
+    int busValue = -1;
+    QString busBadgeKey;
+    void styleBusBadge();
+    void placeBusBadge();
     Ui::InstCh *ui;
 
     InstrumentType instType;

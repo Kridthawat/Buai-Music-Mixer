@@ -546,6 +546,11 @@ void SettingsDialog::on_btnMapChannel_clicked()
 
 void SettingsDialog::on_cbMidiOut_activated(int index)
 {
+    // Mixer edition: only the SoundFont synth exists; re-selecting it must be a no-op.
+    if (mainWin->midiPlayer()->midiOutPortNumber() == -1) {
+        ui->cbMidiOut->setCurrentIndex(0);
+        return;
+    }
     mainWin->stop();
 
     if (index == (ui->cbMidiOut->count() - 1)) {
@@ -565,8 +570,13 @@ void SettingsDialog::on_cbMidiOut_activated(int index)
 
 void SettingsDialog::on_cbMidiIn_activated(int index)
 {
-    mainWin->stop();
+    if (index == mainWin->midiPlayer()->midiInPortNumber() + 1) {
+        // same device re-selected: nothing to do (don't stop playback / reopen port)
+        settings->setValue("MidiInName", index > 0 ? ui->cbMidiIn->itemText(index) : QString());
+        return;
+    }
     mainWin->midiPlayer()->setMidiIn(index-1);
+    ui->cbMidiIn->setCurrentIndex(mainWin->midiPlayer()->midiInPortNumber() + 1);
     settings->setValue("MidiIn", index-1);
     settings->setValue("MidiInName", index > 0 ? ui->cbMidiIn->itemText(index) : QString());
 }
@@ -579,6 +589,9 @@ void SettingsDialog::on_cbAudioOut_activated(int index)
         return;
     }*/
     MidiSynthesizer *synth = mainWin->midiPlayer()->midiSynthesizer();
+
+    if (index+1 == synth->defaultDevice())
+        return;     // same device re-selected: don't rebuild the synth
 
     // Stop playback first so changing the output device mid-play can't garble the sound.
     mainWin->stop();

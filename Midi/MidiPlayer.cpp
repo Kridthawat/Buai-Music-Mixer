@@ -251,13 +251,24 @@ bool MidiPlayer::setMidiIn(int portNumber)
             _midiIn = nullptr;
         }
     } else {
-        if (_midiIn == nullptr) {
-            _midiIn = new RtMidiIn();
-            _midiIn->openPort(portNumber);
-            _midiIn->setCallback(&midiIncallback, this);
-        } else {
-            _midiIn->closePort();
-            _midiIn->openPort(portNumber);
+        try {
+            if (_midiIn == nullptr) {
+                _midiIn = new RtMidiIn();
+                _midiIn->openPort(portNumber);
+                _midiIn->setCallback(&midiIncallback, this);
+            } else {
+                _midiIn->closePort();
+                _midiIn->openPort(portNumber);
+            }
+        } catch (...) {
+            // port busy (e.g. held by the karaoke program): keep the UI alive
+            if (_midiIn != nullptr) {
+                try { _midiIn->closePort(); } catch (...) {}
+                delete _midiIn;
+                _midiIn = nullptr;
+            }
+            _midiPortInNum = -1;
+            return false;
         }
     }
 

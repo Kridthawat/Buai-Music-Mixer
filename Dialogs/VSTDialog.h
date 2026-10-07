@@ -14,6 +14,8 @@ class VSTDialog : public QDialog
 public:
     explicit VSTDialog(QWidget *parent = nullptr, DWORD fxHandle = 0, const QString &instName = QString());
 
+    ~VSTDialog();
+
     DWORD getFxHandle() { return fxHandle; }
     bool isCanOpen() { return canOpen; }
 
@@ -22,8 +24,11 @@ public slots:
 protected:
     void showEvent(QShowEvent *event);
     void closeEvent(QCloseEvent *event);
+    void hideEvent(QHideEvent *event);
 
 private:
+    void detachEditor();
+    bool attached = false;
     DWORD fxHandle;
     bool canOpen = false;
 };

@@ -2,6 +2,7 @@
 
 #include <QShowEvent>
 #include <QCloseEvent>
+#include <QHideEvent>
 
 VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) : QDialog(parent)
 {
@@ -25,12 +26,36 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
 
 void VSTDialog::showEvent(QShowEvent *event)
 {
-    BASS_VST_EmbedEditor(fxHandle, (HWND)this->winId());
+    if (!attached) {
+        BASS_VST_EmbedEditor(fxHandle, NULL);   // make sure no stale embed remains
+        BASS_VST_EmbedEditor(fxHandle, (HWND)this->winId());
+        attached = true;
+    }
     event->accept();
+}
+
+void VSTDialog::detachEditor()
+{
+    if (attached && fxHandle != 0)
+        BASS_VST_EmbedEditor(fxHandle, NULL);
+    attached = false;
+}
+
+void VSTDialog::hideEvent(QHideEvent *event)
+{
+    // reject()/hide() (used by the skinned title-bar close) sends no closeEvent,
+    // so the editor must be released here or it can never be embedded again.
+    detachEditor();
+    QDialog::hideEvent(event);
 }
 
 void VSTDialog::closeEvent(QCloseEvent *event)
 {
-    BASS_VST_EmbedEditor(fxHandle, NULL);
+    detachEditor();
     event->accept();
+}
+
+VSTDialog::~VSTDialog()
+{
+    detachEditor();
 }

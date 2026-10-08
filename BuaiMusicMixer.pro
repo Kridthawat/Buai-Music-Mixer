@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui sql
+QT       += core gui sql network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -85,6 +85,9 @@ SOURCES += main.cpp\
     Dialogs/DeleteSongDialog.cpp \
     Vst3/Vst3Host.cpp \
     Vst3/BassVst3.cpp \
+    Remote/QrCode.cpp \
+    Remote/RemoteServer.cpp \
+    Remote/RemoteDialog.cpp \
     3rdParty/vst3sdk/pluginterfaces/base/funknown.cpp \
     3rdParty/vst3sdk/pluginterfaces/base/coreiids.cpp \
     3rdParty/vst3sdk/pluginterfaces/base/conststringtable.cpp \
@@ -168,7 +171,10 @@ HEADERS  += MainWindow.h \
     Dialogs/Reverb2Dialog.h \
     Dialogs/DeleteSongDialog.h \
     Vst3/Vst3Host.h \
-    Vst3/BassVst3.h
+    Vst3/BassVst3.h \
+    Remote/QrCode.h \
+    Remote/RemoteServer.h \
+    Remote/RemoteDialog.h
 
 FORMS    += MainWindow.ui \
     Dialogs/MedleyDialog.ui \

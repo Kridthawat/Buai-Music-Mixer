@@ -6,6 +6,8 @@
 #include <QKeyEvent>
 #include <QLocale>
 #include <QSettings>
+#include <QPointer>
+#include <QDialog>
 #include <QTranslator>
 
 #ifdef _WIN32
@@ -27,6 +29,7 @@
 
 
 class MedleyLoader;
+class RemoteServer;
 
 
 namespace Ui {
@@ -104,6 +107,7 @@ private slots:
 
     void showContextMenu(const QPoint &pos);
     void showSettingsDialog();
+    void showRemoteDialog();
     void showEqDialog();
     void showChorusDialog();
     void showReverbDialog();
@@ -171,6 +175,8 @@ private:
     bool nextMedleyRequested = false;
 
     MedleyLoader *medleyLoader = nullptr;
+    RemoteServer *remoteServer = nullptr;
+    QPointer<QDialog> remoteDialog;
 
     Background *bgWidget = nullptr;
     LyricsWidget *lyrWidget, *secondLyr = nullptr;

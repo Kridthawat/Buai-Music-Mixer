@@ -17,7 +17,7 @@ namespace MenuIcons {
 
 enum Kind {
     Settings, Channel, Bus, Speaker, Vst, Meter, Eq, Chorus, Reverb,
-    Soundfont, Reset, Save, Open, Language, Theme, About, Exit
+    Soundfont, Reset, Save, Open, Language, Theme, About, Exit, Phone
 };
 
 inline bool isDark()
@@ -183,6 +183,11 @@ inline QIcon make(Kind kind, const QColor &color)
     case Exit:
         p.drawArc(QRectF(3, 3.5, 12, 12), 120 * 16, -300 * 16);
         p.drawLine(QPointF(9, 1.5), QPointF(9, 8));
+        break;
+    case Phone:
+        p.drawRoundedRect(QRectF(4.5, 1.5, 9, 15), 2, 2);
+        p.drawLine(QPointF(7.5, 14), QPointF(10.5, 14));
+        p.drawLine(QPointF(7.5, 3.8), QPointF(10.5, 3.8));
         break;
     }
     p.end();

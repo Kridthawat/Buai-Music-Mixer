@@ -32,6 +32,8 @@
 #include "Dialogs/Reverb2Dialog.h"
 #include "Dialogs/DeleteSongDialog.h"
 #include "Dialogs/MedleyDialog.h"
+#include "Remote/RemoteServer.h"
+#include "Remote/RemoteDialog.h"
 
 #ifndef __linux__
 #include "Dialogs/VSTDirsDialog.h"
@@ -1621,6 +1623,9 @@ void MainWindow::showContextMenuAt(const QPoint &globalPos)
             QMetaObject::invokeMethod(synthMix, "showVuDlg");
         });
 
+        act = menu.addAction(MenuIcons::make(MenuIcons::Phone), tr("ควบคุมผ่านมือถือ (QR Code)..."));
+        connect(act, SIGNAL(triggered()), this, SLOT(showRemoteDialog()));
+
         menu.addSeparator();
 
         // effect pictograms: neon green when the effect is on, dimmed when off
@@ -1722,6 +1727,26 @@ void MainWindow::showSettingsDialog()
     d.adjustSize();
     d.setMinimumSize(d.size());
     d.exec();
+}
+
+void MainWindow::showRemoteDialog()
+{
+    if (remoteDialog)
+    {
+        remoteDialog->raise();
+        remoteDialog->activateWindow();
+        return;
+    }
+
+    if (!remoteServer)
+        remoteServer = new RemoteServer(this, this);
+
+    RemoteDialog *dlg = new RemoteDialog(remoteServer, dialogParent());
+    dlg->adjustSize();
+    dlg->setFixedSize(dlg->size());
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    remoteDialog = dlg;
+    dlg->show();
 }
 
 void MainWindow::showEqDialog()

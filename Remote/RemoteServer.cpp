@@ -28,12 +28,13 @@ static const char *kPage = R"HTML(<!doctype html>
 html,body{margin:0;height:100%;background:#07080d;color:#7dffc0;font:13px sans-serif;overflow:hidden;touch-action:none;overscroll-behavior:none}
 #s{position:absolute;left:0;top:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;max-width:none}
 #msg{position:fixed;left:0;right:0;top:0;text-align:center;padding:6px;background:rgba(0,0,0,.75);display:none;z-index:3}
-#bar{position:fixed;right:6px;bottom:6px;display:flex;gap:6px;z-index:2;opacity:.7}
+#bar{position:fixed;right:calc(6px + env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:2;opacity:.8}
+#bar.min button.x{display:none}
 button{background:#14202a;color:#7dffc0;border:1px solid #1f5a45;border-radius:8px;padding:8px 12px;font-size:14px;min-width:40px}
 </style></head><body>
 <div id="msg"></div>
 <img id="s" alt="">
-<div id="bar"><button id="zo">&minus;</button><button id="zi">+</button><button id="rt">&#10227;</button><button id="esc">Esc</button><button id="fs">&#9974;</button></div>
+<div id="bar"><button id="tg">&#9776;</button><button class="x" id="zi">+</button><button class="x" id="zo">&minus;</button><button class="x" id="rt">&#10227;</button><button class="x" id="esc">Esc</button><button class="x" id="fs">&#9974;</button></div>
 <script>
 var T=new URLSearchParams(location.search).get('t')||'';
 var img=document.getElementById('s'),msg=document.getElementById('msg');
@@ -131,6 +132,12 @@ img.addEventListener('pointerup',end);
 img.addEventListener('pointercancel',end);
 img.addEventListener('contextmenu',function(e){e.preventDefault();});
 document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+var bar=document.getElementById('bar');
+try{if(localStorage.getItem('bm_min')=='1')bar.className='min';}catch(e){}
+document.getElementById('tg').onclick=function(){
+  bar.className=(bar.className=='min')?'':'min';
+  try{localStorage.setItem('bm_min',bar.className=='min'?'1':'0');}catch(e){}
+};
 document.getElementById('esc').onclick=function(){send({type:'key',key:'esc'});};
 document.getElementById('zi').onclick=function(){zoom=Math.min(4,zoom*1.35);layout();};
 document.getElementById('zo').onclick=function(){zoom=Math.max(1,zoom/1.35);if(zoom<1.02){zoom=1;px=0;py=0;}layout();};

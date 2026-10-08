@@ -442,7 +442,7 @@ void VSTDirsDialog::setVSTiUsed(int selected)
     if (synth->isOpened() && mainWindow->midiPlayer()->isPlayerPlaying())
         mainWindow->stop();
 
-    QModelIndexList indexList = ui->tableVSTiUsed->selectionModel()->selectedRows();
+    QModelIndexList indexList = selectedVstiRows();
     for (QModelIndex index : indexList)
     {
         QTableWidgetItem *item = ui->tableVSTiUsed->item(index.row(), 1);
@@ -450,6 +450,14 @@ void VSTDirsDialog::setVSTiUsed(int selected)
 
         InstrumentType type = static_cast<InstrumentType>(index.row());
         synth->setUseVSTi(type, selected);
+
+        // "Not used" also cancels the external MIDI out of that instrument
+        if (selected == -1) {
+            synth->setExtMidiOut(type, QString());
+            QTableWidgetItem *xi = ui->tableVSTiUsed->item(index.row(), 2);
+            if (xi)
+                xi->setText(tr("ใช้เสียงในโปรแกรม"));
+        }
     }
 
     if (synth->isOpened())
@@ -477,7 +485,7 @@ void VSTDirsDialog::setExtMidiOutSelected(const QString &deviceName)
     if (synth->isOpened() && mainWindow->midiPlayer()->isPlayerPlaying())
         mainWindow->stop();
 
-    QModelIndexList indexList = ui->tableVSTiUsed->selectionModel()->selectedRows();
+    QModelIndexList indexList = selectedVstiRows();
     for (QModelIndex index : indexList)
     {
         InstrumentType type = static_cast<InstrumentType>(index.row());
@@ -490,4 +498,13 @@ void VSTDirsDialog::setExtMidiOutSelected(const QString &deviceName)
             item->setText(now.isEmpty() ? tr("ใช้เสียงในโปรแกรม") : now);
     }
     synth->sendAllNotesOff();
+}
+
+
+QModelIndexList VSTDirsDialog::selectedVstiRows()
+{
+    QModelIndexList list = ui->tableVSTiUsed->selectionModel()->selectedRows();
+    if (list.isEmpty() && ui->tableVSTiUsed->currentRow() >= 0)
+        list << ui->tableVSTiUsed->model()->index(ui->tableVSTiUsed->currentRow(), 0);
+    return list;
 }

@@ -50,6 +50,7 @@ private slots:
     void showVSTiSelectMenu(const QPoint &pos);
     void setVSTiUsed(int selected);
     void setExtMidiOutSelected(const QString &deviceName);
+    QModelIndexList selectedVstiRows();
 
 private:
     Ui::VSTDirsDialog *ui;

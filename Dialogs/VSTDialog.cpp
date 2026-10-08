@@ -8,9 +8,12 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
 {
     this->fxHandle = fxHandle;
 
-    // The plug-in editor is embedded over the whole client area, so the app's custom
-    // title bar would be hidden under it (no close button). Keep the native frame.
-    setProperty("buaiNoSkin", true);
+    // The plug-in editor lives in its own native child widget (host) below the
+    // themed title bar; a 1px margin keeps the neon frame outline visible around it.
+    setContentsMargins(2, 0, 2, 6);   // bottom room keeps the rounded corners clear of the plug-in
+    host = new QWidget(this);
+    host->setAttribute(Qt::WA_NativeWindow);
+    host->setAttribute(Qt::WA_DontCreateNativeAncestors);
 
     BASS_VST_INFO info;
     if (BASS_VST_GetInfo(fxHandle, &info) && info.hasEditor)
@@ -20,7 +23,10 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
         name += info.vendorName;
 
         setWindowTitle(name + "  [" + instName + "]");
-        setFixedSize(info.editorWidth, info.editorHeight);
+        edW = info.editorWidth;
+        edH = info.editorHeight;
+        host->resize(edW, edH);
+        setFixedSize(edW + 4, edH + 6);
         setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
         setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
 
@@ -31,8 +37,10 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
 void VSTDialog::showEvent(QShowEvent *event)
 {
     if (!attached) {
+        QMargins m = contentsMargins();      // the skin adds the title bar height on top
+        host->setGeometry(m.left(), m.top(), edW, edH);
         BASS_VST_EmbedEditor(fxHandle, NULL);   // make sure no stale embed remains
-        BASS_VST_EmbedEditor(fxHandle, (HWND)this->winId());
+        BASS_VST_EmbedEditor(fxHandle, (HWND)host->winId());
         attached = true;
     }
     event->accept();

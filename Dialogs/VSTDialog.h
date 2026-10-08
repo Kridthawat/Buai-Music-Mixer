@@ -29,6 +29,8 @@ protected:
 private:
     void detachEditor();
     bool attached = false;
+    QWidget *host = nullptr;
+    int edW = 0, edH = 0;
     DWORD fxHandle;
     bool canOpen = false;
 };

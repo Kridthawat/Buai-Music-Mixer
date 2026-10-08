@@ -5,6 +5,8 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QSignalMapper>
+#include <QModelIndexList>
+#include <QAbstractItemModel>
 
 #include "MainWindow.h"
 #include "Midi/MidiSynthesizer.h"

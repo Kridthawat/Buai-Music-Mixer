@@ -44,7 +44,9 @@ var rotMode=0,zoom=1,px=0,py=0,ROT=false;
 function say(t){if(t){msg.textContent=t;msg.style.display='block';}else{msg.style.display='none';}}
 function layout(){
   var iw=img.naturalWidth,ih=img.naturalHeight;if(!iw||!ih)return;
-  var vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;
+  var vv=window.visualViewport;
+  var vw=Math.min(document.documentElement.clientWidth,window.innerWidth||1e9,vv?vv.width:1e9);
+  var vh=Math.min(document.documentElement.clientHeight,window.innerHeight||1e9,vv?vv.height:1e9);
   var rot=(rotMode==1)||(rotMode==0&&vh>vw&&iw>ih*1.15);
   var bw=rot?ih:iw,bh=rot?iw:ih;
   var s=Math.min(vw/bw,vh/bh)*zoom;
@@ -64,10 +66,22 @@ function layout(){
     bar.style.flexDirection='row';bar.style.right='auto';bar.style.transform='none';
     var bw=bar.offsetWidth,bhh=bar.offsetHeight;
     bar.style.left=Math.max(4,Math.min(vw-bw-4,vw/2+px-bw/2))+'px';
-    bar.style.top=Math.max(64,imgTop-bhh-10)+'px';
+    var minTop=52;                                  // keep clear of the browser's own top bar
+    var above=imgTop-minTop,below=vh-(imgTop+hh)-24;
+    var top;
+    if(above>=bhh+14)top=imgTop-bhh-14;             // above the mixer (preferred)
+    else if(below>=bhh+14)top=imgTop+hh+8;          // otherwise below it
+    else top=minTop;
+    bar.style.top=Math.max(minTop,top)+'px';
+    // safety: measure what really happened and lift the bar off the image
+    var rc=bar.getBoundingClientRect();
+    if(top<imgTop&&rc.bottom>imgTop-6){
+      bar.style.top=Math.max(0,rc.top-(rc.bottom-(imgTop-8)))+'px';
+    }
   }
 }
 window.addEventListener('resize',layout);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',layout);
 window.addEventListener('orientationchange',function(){setTimeout(layout,200);});
 function fetchT(url,opt,ms){
   // never wait forever on a weak Wi-Fi link

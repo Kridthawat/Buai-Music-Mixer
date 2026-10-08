@@ -228,9 +228,9 @@ void loadVSTi(QSplashScreen *splash, MidiSynthesizer *synth)
         if (vsti != 0)
         {
             if (chunk.length() > 0) {
-                BASS_VST_SetChunk(vsti, false, chunk.constData(), chunk.length());
+                bv::SetChunk(vsti, false, chunk.constData(), chunk.length());
             } else {
-                BASS_VST_SetProgram(vsti, program);
+                bv::SetProgram(vsti, program);
                 FX::setVSTParams(vsti, params);
             }
         }
@@ -252,22 +252,27 @@ void makeVSTList(QSplashScreen *splash, MidiSynthesizer *synth)
 
     for (const QString &dir : vstDirs)
     {
-        QDirIterator it(dir, QStringList() << "*.DLL" << "*.dll",
-                        QDir::Files|QDir::NoSymLinks, QDirIterator::Subdirectories);
+        QDirIterator it(dir, QStringList() << "*.DLL" << "*.dll" << "*.vst3" << "*.VST3",
+                        QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot|QDir::NoSymLinks, QDirIterator::Subdirectories);
 
         while(it.hasNext()) {
 
             it.next();
 
+            // skip files inside a *.vst3 folder (the folder itself is scanned)
+            if (it.filePath().contains(".vst3/", Qt::CaseInsensitive))
+                continue;
+
             splash->showMessage("กำลังตรวจสอบ : " + it.fileName(), Qt::AlignBottom|Qt::AlignRight, QColor("#cfd3dc"));
             qApp->processEvents();
 
-            VSTNamePath info;
+            QList<VSTNamePath> infos;
 
-            if (!Utils::vstInfo(it.filePath(), &info))
+            if (!Utils::vstInfos(it.filePath(), &infos))
                 continue;
 
-            vstList[info.uniqueID] = info;
+            for (const VSTNamePath &info : infos)
+                vstList[info.uniqueID] = info;
         }
     }
 

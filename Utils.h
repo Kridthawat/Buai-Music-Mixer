@@ -27,6 +27,8 @@ public:
     static uint concurentThreadsSupported();
 
     static bool vstInfo(const QString &vstPath, VSTNamePath *info);
+    // VST2 file -> 1 entry, VST3 file -> 1 entry per audio class
+    static bool vstInfos(const QString &vstPath, QList<VSTNamePath> *infos);
 
     static bool savePlaylist(const QString &filePath, const QList<Song*> &songs);
     static bool loadPlaylist(const QString &filePath, QList<Song*> &songs);

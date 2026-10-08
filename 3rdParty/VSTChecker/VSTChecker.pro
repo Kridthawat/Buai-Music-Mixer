@@ -14,7 +14,18 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    $$PWD/../../Vst3/Vst3Host.cpp \
+    $$PWD/../vst3sdk/pluginterfaces/base/funknown.cpp \
+    $$PWD/../vst3sdk/pluginterfaces/base/coreiids.cpp \
+    $$PWD/../vst3sdk/pluginterfaces/base/conststringtable.cpp \
+    $$PWD/../vst3sdk/public.sdk/source/vst/vstinitiids.cpp \
+    $$PWD/../vst3sdk/public.sdk/source/common/commoniids.cpp
+
+HEADERS += $$PWD/../../Vst3/Vst3Host.h
+
+INCLUDEPATH += $$PWD/../.. $$PWD/../vst3sdk
+win32: LIBS += -lshell32 -luser32
 
 win32 {
     contains(QT_ARCH, i386) {

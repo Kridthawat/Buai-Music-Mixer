@@ -16,7 +16,7 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
     host->setAttribute(Qt::WA_DontCreateNativeAncestors);
 
     BASS_VST_INFO info;
-    if (BASS_VST_GetInfo(fxHandle, &info) && info.hasEditor)
+    if (bv::GetInfo(fxHandle, &info) && info.hasEditor)
     {
         QString name = info.effectName;
         name += " - ";
@@ -39,8 +39,8 @@ void VSTDialog::showEvent(QShowEvent *event)
     if (!attached) {
         QMargins m = contentsMargins();      // the skin adds the title bar height on top
         host->setGeometry(m.left(), m.top(), edW, edH);
-        BASS_VST_EmbedEditor(fxHandle, NULL);   // make sure no stale embed remains
-        BASS_VST_EmbedEditor(fxHandle, (HWND)host->winId());
+        bv::EmbedEditor(fxHandle, NULL);   // make sure no stale embed remains
+        bv::EmbedEditor(fxHandle, (HWND)host->winId());
         attached = true;
     }
     event->accept();
@@ -49,7 +49,7 @@ void VSTDialog::showEvent(QShowEvent *event)
 void VSTDialog::detachEditor()
 {
     if (attached && fxHandle != 0)
-        BASS_VST_EmbedEditor(fxHandle, NULL);
+        bv::EmbedEditor(fxHandle, NULL);
     attached = false;
 }
 

@@ -219,14 +219,14 @@ void MidiSynthesizer::close()
         {
             #ifndef __linux__
             int vIndex = static_cast<int>(t) - HANDLE_VSTI_START;
-            mVstiTempProgram[vIndex] = BASS_VST_GetProgram(h);
+            mVstiTempProgram[vIndex] = bv::GetProgram(h);
             mVstiTempParams[vIndex] = FX::getVSTParams(h);
 
             DWORD length = 0;
-            char *chunk = BASS_VST_GetChunk(h, false, &length);
+            char *chunk = bv::GetChunk(h, false, &length);
             mVstiChunk[vIndex] = QByteArray(chunk, length);
 
-            BASS_VST_ChannelFree(h);
+            bv::ChannelFree(h);
             #endif
         }
         else
@@ -532,7 +532,7 @@ void MidiSynthesizer::sendNoteOff(int ch, int note, int velocity)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], 9, MIDI_EVENT_NOTE, MAKEWORD(note, 0));
+            bv::ProcessEvent(handles[t], 9, MIDI_EVENT_NOTE, MAKEWORD(note, 0));
             #endif
         }
     }
@@ -545,7 +545,7 @@ void MidiSynthesizer::sendNoteOff(int ch, int note, int velocity)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], ch, MIDI_EVENT_NOTE, MAKEWORD(note, 0));
+            bv::ProcessEvent(handles[t], ch, MIDI_EVENT_NOTE, MAKEWORD(note, 0));
             #endif
         }
     }
@@ -574,7 +574,7 @@ void MidiSynthesizer::sendNoteOn(int ch, int note, int velocity)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], 9, MIDI_EVENT_NOTE, MAKEWORD(note, velocity));
+            bv::ProcessEvent(handles[t], 9, MIDI_EVENT_NOTE, MAKEWORD(note, velocity));
             emit noteOnSended(t, instMap[t].bus, 9, note, velocity);
             #endif
         }
@@ -592,7 +592,7 @@ void MidiSynthesizer::sendNoteOn(int ch, int note, int velocity)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], ch, MIDI_EVENT_NOTE, MAKEWORD(note, velocity));
+            bv::ProcessEvent(handles[t], ch, MIDI_EVENT_NOTE, MAKEWORD(note, velocity));
             emit noteOnSended(t, instMap[t].bus, ch, note, velocity);
             #endif
         }
@@ -618,7 +618,7 @@ void MidiSynthesizer::sendNoteAftertouch(int ch, int note, int value)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], 9, MIDI_EVENT_KEYPRES, MAKEWORD(note, value));
+            bv::ProcessEvent(handles[t], 9, MIDI_EVENT_KEYPRES, MAKEWORD(note, value));
             #endif
         }
     }
@@ -631,7 +631,7 @@ void MidiSynthesizer::sendNoteAftertouch(int ch, int note, int value)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], ch, MIDI_EVENT_KEYPRES, MAKEWORD(note, value));
+            bv::ProcessEvent(handles[t], ch, MIDI_EVENT_KEYPRES, MAKEWORD(note, value));
             #endif
         }
     }
@@ -753,7 +753,7 @@ void MidiSynthesizer::sendController(int ch, int number, int value)
                 BASS_MIDI_StreamEvents(h, BASS_MIDI_EVENTS_RAW, (void*)data, 3);
             #ifndef __linux__
             else
-                BASS_VST_ProcessEventRaw(h, (void*)data, 3);
+                bv::ProcessEventRaw(h, (void*)data, 3);
             #endif
         }
         return;
@@ -813,7 +813,7 @@ void MidiSynthesizer::sendPitchBend(int ch, int value)
         {
             #ifndef __linux__
             InstrumentType t = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
-            BASS_VST_ProcessEvent(handles[t], ch, MIDI_EVENT_PITCH, value);
+            bv::ProcessEvent(handles[t], ch, MIDI_EVENT_PITCH, value);
             #endif
         }
     }
@@ -1006,7 +1006,7 @@ void MidiSynthesizer::setUseVSTi(InstrumentType t, int vstiIndex)
     {
         InstrumentType type = static_cast<InstrumentType>(vstiIndex + HANDLE_VSTI_START);
         for (int ch=0; ch<16; ch++)
-            BASS_VST_ProcessEvent(handles[type], ch, MIDI_EVENT_NOTESOFF, 0);
+            bv::ProcessEvent(handles[type], ch, MIDI_EVENT_NOTESOFF, 0);
     }
     #endif
 }
@@ -1023,7 +1023,7 @@ void MidiSynthesizer::setSpeaker(InstrumentType t, SpeakerType speaker)
 
     BASS_Mixer_ChannelRemove(handles[t]);
     #ifndef __linux__
-    BASS_VST_ChannelFree(handles[t]);
+    bv::ChannelFree(handles[t]);
     #endif
     BASS_StreamFree(handles[t]);
 
@@ -1295,7 +1295,7 @@ int MidiSynthesizer::vstiProgram(int vstiIndex)
 {
     DWORD h = vstiHandle(vstiIndex);
     if (isOpened() && h != 0)
-        return BASS_VST_GetProgram(h);
+        return bv::GetProgram(h);
     else
         return mVstiTempProgram[vstiIndex];
 }
@@ -1315,7 +1315,7 @@ QByteArray MidiSynthesizer::vstiChunk(int vstiIndex)
     if (isOpened() && h != 0)
     {
         DWORD length = 0;
-        char *chunk = BASS_VST_GetChunk(h, false, &length);
+        char *chunk = bv::GetChunk(h, false, &length);
         return QByteArray(chunk, length);
     }
     else
@@ -1341,14 +1341,14 @@ DWORD MidiSynthesizer::setVSTiFile(int vstiIndex, const QString &file)
         return 0;
 
     BASS_Mixer_ChannelRemove(vsti);
-    BASS_VST_ChannelFree(vsti);
+    bv::ChannelFree(vsti);
 
     vsti = createStream(t);
 
     if (vsti)
     {
         BASS_VST_INFO vstinfo;
-        BASS_VST_GetInfo(vsti, &vstinfo);
+        bv::GetInfo(vsti, &vstinfo);
         mVstiInfos[vstiIndex] = vstinfo;
         mVstiTempProgram[vstiIndex] = 0;
         mVstiTempParams[vstiIndex].clear();
@@ -1383,7 +1383,7 @@ void MidiSynthesizer::removeVSTiFile(int vstiIndex)
     DWORD vsti = handles[t];
 
     BASS_Mixer_ChannelRemove(vsti);
-    BASS_VST_ChannelFree(vsti);
+    bv::ChannelFree(vsti);
 
     handles[t] = 0;
     mVstiFiles[vstiIndex] = "";
@@ -1426,23 +1426,23 @@ DWORD MidiSynthesizer::createStream(InstrumentType t)
             if (mVstiFiles[vIndex] == "")
                 return 0;
             #ifdef _WIN32
-            DWORD h = BASS_VST_ChannelCreate(44100, chan, mVstiFiles[vIndex].toStdWString().c_str(),
+            DWORD h = bv::ChannelCreate(44100, chan, mVstiFiles[vIndex].toStdWString().c_str(),
                                        f|BASS_UNICODE|BASS_STREAM_DECODE);
             #else
-            DWORD h = BASS_VST_ChannelCreate(44100, chan, mVstiFiles[vIndex].toStdString().c_str(),
+            DWORD h = bv::ChannelCreate(44100, chan, mVstiFiles[vIndex].toStdString().c_str(),
                                        f|BASS_STREAM_DECODE);
             #endif
             if (h)
             {
                 BASS_VST_INFO info;
-                BASS_VST_GetInfo(h, &info);
+                bv::GetInfo(h, &info);
                 mVstiInfos[vIndex] = info;
 
                 if (mVstiChunk[vIndex].length() > 0) {
                     // chunk = complete state; don't revert it with program/params
-                    BASS_VST_SetChunk(h, false, mVstiChunk[vIndex].constData(), mVstiChunk[vIndex].length());
+                    bv::SetChunk(h, false, mVstiChunk[vIndex].constData(), mVstiChunk[vIndex].length());
                 } else {
-                    BASS_VST_SetProgram(h, mVstiTempProgram[vIndex]);
+                    bv::SetProgram(h, mVstiTempProgram[vIndex]);
                     FX::setVSTParams(h, mVstiTempParams[vIndex]);
                 }
             }
@@ -1465,7 +1465,7 @@ void MidiSynthesizer::sendToAllMidiStream(int ch, DWORD eventType, DWORD param)
             BASS_MIDI_StreamEvent(stream, ch, eventType, param);
         #ifndef __linux__
         else
-            BASS_VST_ProcessEvent(stream, ch, eventType, param);
+            bv::ProcessEvent(stream, ch, eventType, param);
         #endif
     }
 }

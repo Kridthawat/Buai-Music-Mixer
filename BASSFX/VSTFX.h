@@ -5,6 +5,7 @@
 
 #include "FX.h"
 #include <bass_vst.h>
+#include "Vst3/BassVst3.h"
 
 
 class VSTFX : public FX

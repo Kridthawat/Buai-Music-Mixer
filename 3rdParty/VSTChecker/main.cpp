@@ -2,6 +2,45 @@
 #include <bass_vst.h>
 
 #include <iostream>
+#include <string>
+#include <vector>
+
+#include "Vst3/Vst3Host.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+
+static std::string toUtf8(const wchar_t *w)
+{
+    int n = WideCharToMultiByte(CP_UTF8, 0, w, -1, nullptr, 0, nullptr, nullptr);
+    std::string s(n > 0 ? n - 1 : 0, '\0');
+    if (n > 1)
+        WideCharToMultiByte(CP_UTF8, 0, w, -1, &s[0], n, nullptr, nullptr);
+    return s;
+}
+#endif
+
+// VST3: prints, for every audio-module class of the file, 4 lines
+// (uid, name, vendor, "path|classIndex"). Output is UTF-8.
+static int checkVst3(const std::string &path)
+{
+    std::vector<vst3host::ClassEntry> classes;
+    std::string err;
+    if (!vst3host::scan(path, classes, &err) || classes.empty())
+    {
+        std::cout << path << " is not VST3 file" << std::endl;
+        return 2;
+    }
+    for (size_t i = 0; i < classes.size(); i++)
+    {
+        const vst3host::ClassEntry &c = classes[i];
+        std::cout << c.uid << "\n" << c.name << "\n" << c.vendor << "\n"
+                  << path << "|" << c.index << "\n";
+    }
+    std::cout.flush();
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -9,6 +48,20 @@ int main(int argc, char *argv[])
     {
         std::cout << "Invalid parameter, argc is " << argc << std::endl;
         return 3;
+    }
+
+    {
+        std::string arg = argv[1];
+        #ifdef _WIN32
+        int wn = 0;
+        LPWSTR *wargv = CommandLineToArgvW(GetCommandLineW(), &wn);
+        if (wargv && wn >= 2)
+            arg = toUtf8(wargv[1]);
+        if (wargv)
+            LocalFree(wargv);
+        #endif
+        if (vst3host::isVst3Path(arg))
+            return checkVst3(arg);
     }
 
     BASS_Init(-1, 0, 0, NULL, NULL);

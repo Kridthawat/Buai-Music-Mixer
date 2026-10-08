@@ -44,6 +44,7 @@
 
 #ifndef __linux__
 #include <bass_vst.h>
+#include "Vst3/BassVst3.h"
 #include "Dialogs/VSTDirsDialog.h"
 #endif
 

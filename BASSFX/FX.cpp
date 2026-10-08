@@ -23,9 +23,9 @@ uint FX::uids()
 QList<float> FX::getVSTParams(DWORD vstHandle)
 {
     QList<float> params;
-    int count = BASS_VST_GetParamCount(vstHandle);
+    int count = bv::GetParamCount(vstHandle);
     for (int i=0; i<count; i++) {
-        params.append(BASS_VST_GetParam(vstHandle, i));
+        params.append(bv::GetParam(vstHandle, i));
     }
     return params;
 }
@@ -33,7 +33,7 @@ QList<float> FX::getVSTParams(DWORD vstHandle)
 void FX::setVSTParams(DWORD fxHandle, const QList<float> &params)
 {
     for (int i=0; i<params.count(); i++) {
-        BASS_VST_SetParam(fxHandle, i, params[i]);
+        bv::SetParam(fxHandle, i, params[i]);
     }
 }
 

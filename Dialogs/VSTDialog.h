@@ -6,6 +6,7 @@
 #include <bass.h>
 #ifndef __linux__
 #include <bass_vst.h>
+#include "Vst3/BassVst3.h"
 #endif
 
 class VSTDialog : public QDialog

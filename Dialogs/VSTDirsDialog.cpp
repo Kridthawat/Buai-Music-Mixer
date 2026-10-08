@@ -145,10 +145,13 @@ void VSTDirsDialog::on_btnUpdate_clicked()
 
     for (int i=0; i<ui->list->count(); i++) {
         QListWidgetItem *item = ui->list->item(i);
-        QDirIterator it(item->text(), QStringList() << "*.DLL" << "*.dll",
-                        QDir::Files|QDir::NoSymLinks, QDirIterator::Subdirectories);
+        QDirIterator it(item->text(), QStringList() << "*.DLL" << "*.dll" << "*.vst3" << "*.VST3",
+                        QDir::Files|QDir::Dirs|QDir::NoDotAndDotDot|QDir::NoSymLinks, QDirIterator::Subdirectories);
         while (it.hasNext()) {
-            filesPath << it.next();
+            QString p = it.next();
+            if (p.contains(".vst3/", Qt::CaseInsensitive))
+                continue;
+            filesPath << p;
             filesName << it.fileName();
         }
     }
@@ -171,16 +174,17 @@ void VSTDirsDialog::on_btnUpdate_clicked()
         ui->lbVSTName->setText(filesName[i]);
         QApplication::processEvents();
 
-        VSTNamePath info;
+        QList<VSTNamePath> infos;
 
-        if (!Utils::vstInfo(filesPath[i], &info))
+        if (!Utils::vstInfos(filesPath[i], &infos))
         {
             ui->progressBar->setValue(i+1);
             QApplication::processEvents();
             continue;
         }
 
-        vstList[info.uniqueID] = info;
+        for (const VSTNamePath &info : infos)
+            vstList[info.uniqueID] = info;
 
         ui->progressBar->setValue(i+1);
         QApplication::processEvents();
@@ -211,7 +215,7 @@ void VSTDirsDialog::initVSTiDetail(int vstiIndex, QLineEdit *le, QLabel *lbName,
 bool VSTDirsDialog::setVSTiFile(int vstiIndex, QLineEdit *le, QLabel *lbName, QLabel *lbVendor, QPushButton *btn, QPushButton *btn2)
 {
     #ifdef _WIN32
-    QString filter = tr("DLL file (*.dll *.DLL)");
+    QString filter = tr("VST file (*.dll *.DLL *.vst3 *.VST3)");
     #elif
     QString filter = tr("VST file (*.vst *.VST)");
     #endif

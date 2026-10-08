@@ -82,7 +82,14 @@ SOURCES += main.cpp\
     BASSFX/Chorus2FX.cpp \
     BASSFX/Reverb2FX.cpp \
     Dialogs/Reverb2Dialog.cpp \
-    Dialogs/DeleteSongDialog.cpp
+    Dialogs/DeleteSongDialog.cpp \
+    Vst3/Vst3Host.cpp \
+    Vst3/BassVst3.cpp \
+    3rdParty/vst3sdk/pluginterfaces/base/funknown.cpp \
+    3rdParty/vst3sdk/pluginterfaces/base/coreiids.cpp \
+    3rdParty/vst3sdk/pluginterfaces/base/conststringtable.cpp \
+    3rdParty/vst3sdk/public.sdk/source/vst/vstinitiids.cpp \
+    3rdParty/vst3sdk/public.sdk/source/common/commoniids.cpp
 
 HEADERS  += MainWindow.h \
     Dialogs/MedleyDialog.h \
@@ -159,7 +166,9 @@ HEADERS  += MainWindow.h \
     BASSFX/Chorus2FX.h \
     BASSFX/Reverb2FX.h \
     Dialogs/Reverb2Dialog.h \
-    Dialogs/DeleteSongDialog.h
+    Dialogs/DeleteSongDialog.h \
+    Vst3/Vst3Host.h \
+    Vst3/BassVst3.h
 
 FORMS    += MainWindow.ui \
     Dialogs/MedleyDialog.ui \
@@ -198,6 +207,8 @@ FORMS    += MainWindow.ui \
 
 
 INCLUDEPATH += $$PWD/Widgets
+INCLUDEPATH += $$PWD
+INCLUDEPATH += $$PWD/3rdParty/vst3sdk
 
 TRANSLATIONS = languages/en.ts
 

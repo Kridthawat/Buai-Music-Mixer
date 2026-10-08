@@ -117,6 +117,40 @@ bool Utils::vstInfo(const QString &vstPath, VSTNamePath *info)
     return true;
 }
 
+bool Utils::vstInfos(const QString &vstPath, QList<VSTNamePath> *infos)
+{
+    if (!vstPath.endsWith(".vst3", Qt::CaseInsensitive))
+    {
+        VSTNamePath info;
+        if (!vstInfo(vstPath, &info))
+            return false;
+        infos->append(info);
+        return true;
+    }
+
+    QProcess process;
+    process.start(VST_CHECKER_NAME, QStringList() << vstPath);
+    process.waitForFinished(-1);
+
+    if (process.exitCode() != 0)
+        return false;
+
+    QString strout = QString::fromUtf8(process.readAllStandardOutput());
+    QStringList lines = strout.split('\n');
+
+    for (int i = 0; i + 3 < lines.count(); i += 4)
+    {
+        VSTNamePath info;
+        info.uniqueID = lines[i].trimmed().toUInt();
+        info.vstName = lines[i + 1].trimmed();
+        info.vstvendor = lines[i + 2].trimmed();
+        info.vstPath = lines[i + 3].trimmed();
+        infos->append(info);
+    }
+
+    return !infos->isEmpty();
+}
+
 bool Utils::savePlaylist(const QString &filePath, const QList<Song *> &songs)
 {
     QFile file(filePath);

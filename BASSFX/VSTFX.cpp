@@ -9,10 +9,10 @@ VSTFX::VSTFX(const QString &vstFile, DWORD stream, int priority) : FX(priority)
     if (stream != 0)
     {
         #ifdef _WIN32
-        fx = BASS_VST_ChannelSetDSP(stream, vstFile.toStdWString().c_str(),
+        fx = bv::ChannelSetDSP(stream, vstFile.toStdWString().c_str(),
                                          BASS_VST_KEEP_CHANS|BASS_UNICODE, priority);
         #elif __APPLE__
-        fx = BASS_VST_ChannelSetDSP(stream, vstFile.vstPath.toStdString().c_str(),
+        fx = bv::ChannelSetDSP(stream, vstFile.vstPath.toStdString().c_str(),
                                          BASS_VST_KEEP_CHANS, priority);
         #endif
 
@@ -20,7 +20,7 @@ VSTFX::VSTFX(const QString &vstFile, DWORD stream, int priority) : FX(priority)
         defaultParams = params();
 
         BASS_VST_INFO info;
-        if (BASS_VST_GetInfo(fx, &info))
+        if (bv::GetInfo(fx, &info))
         {
             _uids = info.uniqueID;
         }
@@ -33,7 +33,7 @@ VSTFX::~VSTFX()
 {
     if (stream != 0)
     {
-        BASS_VST_ChannelRemoveDSP(stream, fx);
+        bv::ChannelRemoveDSP(stream, fx);
     }
 }
 
@@ -42,21 +42,21 @@ bool VSTFX::isVSTFile(const QString &vstPath, BASS_VST_INFO *info)
     HSTREAM stream = BASS_StreamCreate(44100, 2, 0, NULL, NULL);
 
     #ifdef _WIN32
-    DWORD h = BASS_VST_ChannelSetDSP(stream, vstPath.toStdWString().c_str(),
+    DWORD h = bv::ChannelSetDSP(stream, vstPath.toStdWString().c_str(),
                                      BASS_VST_KEEP_CHANS|BASS_UNICODE, 0);
     #else
-    DWORD h = BASS_VST_ChannelSetDSP(stream, vstPath.toStdString().c_str(),
+    DWORD h = bv::ChannelSetDSP(stream, vstPath.toStdString().c_str(),
                                      BASS_VST_KEEP_CHANS, 0);
     #endif
 
     bool result = false;
 
-    if (BASS_VST_GetInfo(h, info) && !info->isInstrument)
+    if (bv::GetInfo(h, info) && !info->isInstrument)
         result = true;
     else
         result = false;
 
-    BASS_VST_ChannelRemoveDSP(stream, h);
+    bv::ChannelRemoveDSP(stream, h);
     BASS_StreamFree(stream);
 
     return result;
@@ -65,7 +65,7 @@ bool VSTFX::isVSTFile(const QString &vstPath, BASS_VST_INFO *info)
 BASS_VST_INFO VSTFX::VSTInfo()
 {
     BASS_VST_INFO info;
-    BASS_VST_GetInfo(fx, &info);
+    bv::GetInfo(fx, &info);
 
     return info;
 }
@@ -83,7 +83,7 @@ int VSTFX::program()
     }
     else
     {
-        return BASS_VST_GetProgram(fx);
+        return bv::GetProgram(fx);
     }
 }
 
@@ -95,7 +95,7 @@ void VSTFX::setProgram(int programIndex)
     }
     else
     {
-        BASS_VST_SetProgram(fx, programIndex);
+        bv::SetProgram(fx, programIndex);
     }
 }
 
@@ -108,7 +108,7 @@ QByteArray VSTFX::chunk()
     else
     {
         DWORD length = 0;
-        char *cnk = BASS_VST_GetChunk(fx, false, &length);
+        char *cnk = bv::GetChunk(fx, false, &length);
         return QByteArray(cnk, length);
     }
 }
@@ -122,7 +122,7 @@ void VSTFX::setChunk(const QByteArray &cnk)
     else
     {
         if (cnk.length() > 0) {
-            BASS_VST_SetChunk(fx, false, cnk.constData(), cnk.length());
+            bv::SetChunk(fx, false, cnk.constData(), cnk.length());
         }
     }
 }
@@ -136,9 +136,9 @@ QList<float> VSTFX::params()
     else
     {
         QList<float> params;
-        int count = BASS_VST_GetParamCount(fx);
+        int count = bv::GetParamCount(fx);
         for (int i=0; i<count; i++) {
-            params.append(BASS_VST_GetParam(fx, i));
+            params.append(bv::GetParam(fx, i));
         }
         return params;
     }
@@ -154,7 +154,7 @@ void VSTFX::setParams(const QList<float> &params)
     else
     {
         for (int i=0; i<params.count(); i++) {
-            BASS_VST_SetParam(fx, i, params[i]);
+            bv::SetParam(fx, i, params[i]);
         }
     }
 }
@@ -164,16 +164,16 @@ void VSTFX::setStreamHandle(DWORD stream)
     tempChunk = chunk();
     tempParams = params();
     programIndex = program();
-    BASS_VST_ChannelRemoveDSP(this->stream, fx);
+    bv::ChannelRemoveDSP(this->stream, fx);
     this->stream = stream;
 
     if (stream != 0)
     {
         #ifdef _WIN32
-        fx = BASS_VST_ChannelSetDSP(stream, vstFile.toStdWString().c_str(),
+        fx = bv::ChannelSetDSP(stream, vstFile.toStdWString().c_str(),
                                          BASS_VST_KEEP_CHANS|BASS_UNICODE, priority);
         #elif __APPLE__
-        fx = BASS_VST_ChannelSetDSP(stream, vstFile.vstPath.toStdString().c_str(),
+        fx = bv::ChannelSetDSP(stream, vstFile.vstPath.toStdString().c_str(),
                                          BASS_VST_KEEP_CHANS, priority);
         #endif
 
@@ -197,7 +197,7 @@ void VSTFX::setBypass(bool b)
     if (stream == 0)
         return;
 
-    BASS_VST_SetBypass(fx, b);
+    bv::SetBypass(fx, b);
 }
 
 void VSTFX::reset()

@@ -9,6 +9,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QElapsedTimer>
+#include <QTimer>
 #include <QByteArray>
 #include <QMap>
 #include <QString>
@@ -69,6 +70,7 @@ private:
 
     QMap<QString, qint64> clients;      // ip -> msecs (QElapsedTimer based)
     QElapsedTimer         clock;
+    QTimer                idleTimer;
 };
 
 #endif // REMOTESERVER_H

@@ -28,9 +28,9 @@ static const char *kPage = R"HTML(<!doctype html>
 html,body{margin:0;height:100%;background:#07080d;color:#7dffc0;font:13px sans-serif;overflow:hidden;touch-action:none;overscroll-behavior:none}
 #s{position:absolute;left:0;top:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;max-width:none}
 #msg{position:fixed;left:0;right:0;top:0;text-align:center;padding:6px;background:rgba(0,0,0,.75);display:none;z-index:3}
-#bar{position:fixed;right:calc(6px + env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:2;opacity:.8}
+#bar{touch-action:manipulation;position:fixed;right:calc(6px + env(safe-area-inset-right));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:2;opacity:.8}
 #bar.min button.x{display:none}
-button{background:#14202a;color:#7dffc0;border:1px solid #1f5a45;border-radius:8px;padding:8px 12px;font-size:14px;min-width:40px}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;background:#14202a;color:#7dffc0;border:1px solid #1f5a45;border-radius:8px;padding:8px 12px;font-size:14px;min-width:40px}
 </style></head><body>
 <div id="msg"></div>
 <img id="s" alt="">
@@ -69,19 +69,28 @@ function layout(){
 }
 window.addEventListener('resize',layout);
 window.addEventListener('orientationchange',function(){setTimeout(layout,200);});
+function fetchT(url,opt,ms){
+  // never wait forever on a weak Wi-Fi link
+  var ac=(typeof AbortController!=='undefined')?new AbortController():null;
+  var tm=setTimeout(function(){if(ac)ac.abort();},ms);
+  opt=opt||{};if(ac)opt.signal=ac.signal;
+  return fetch(url,opt).then(function(r){clearTimeout(tm);return r;},function(e){clearTimeout(tm);throw e;});
+}
+var gotFrame=true;
 function loop(){
   if(dead)return;
-  fetch('/f?t='+encodeURIComponent(T)+'&h='+h,{cache:'no-store'}).then(function(r){
+  gotFrame=false;
+  fetchT('/f?t='+encodeURIComponent(T)+'&h='+h,{cache:'no-store'},5000).then(function(r){
     if(r.status==403){dead=true;say('QRหมดอายุ/ปิดอยู่ กรุณาสแกนใหม่');return;}
     if(r.status==200){
-      h=r.headers.get('X-H')||'';
+      h=r.headers.get('X-H')||'';gotFrame=true;
       return r.blob().then(function(b){
         var u=URL.createObjectURL(b),old=img.src;
         img.onload=function(){if(old&&old.indexOf('blob:')==0)URL.revokeObjectURL(old);layout();};
         img.src=u;
       });
     }
-  }).then(function(){fails=0;say('');setTimeout(loop,50);})
+  }).then(function(){fails=0;say('');setTimeout(loop,gotFrame?30:90);})
     .catch(function(){fails++;say('กำลังเชื่อมต่อ...');setTimeout(loop,Math.min(2000,250*fails));});
 }
 loop();
@@ -91,7 +100,7 @@ function pump(){
   if(sending||!pend.length)return;
   sending=true;
   var o=pend.shift();
-  fetch('/e?t='+encodeURIComponent(T),{method:'POST',body:new URLSearchParams(o)})
+  fetchT('/e?t='+encodeURIComponent(T),{method:'POST',body:new URLSearchParams(o)},2500)
     .catch(function(){}).then(function(){sending=false;pump();});
 }
 function send(o){
@@ -145,24 +154,33 @@ img.addEventListener('pointercancel',end);
 img.addEventListener('contextmenu',function(e){e.preventDefault();});
 document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
 try{if(localStorage.getItem('bm_min')=='1')bar.className='min';}catch(e){}
-document.getElementById('tg').onclick=function(){
+function btn(id,fn){
+  var b=document.getElementById(id);
+  b.addEventListener('pointerdown',function(e){
+    e.preventDefault();e.stopPropagation();
+    b.style.background='#1f5a45';setTimeout(function(){b.style.background='';},140);
+    fn();
+  });
+  b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();});
+}
+btn('tg',function(){
   bar.className=(bar.className=='min')?'':'min';
   try{localStorage.setItem('bm_min',bar.className=='min'?'1':'0');}catch(e){}
   layout();
-};
-document.getElementById('esc').onclick=function(){send({type:'key',key:'esc'});};
-var fsb=document.getElementById('fs'),de=document.documentElement;
-if(!(de.requestFullscreen||de.webkitRequestFullscreen))fsb.style.display='none';   // e.g. iPhone Safari
-fsb.onclick=function(){
+});
+btn('esc',function(){send({type:'key',key:'esc'});});
+btn('zi',function(){zoom=Math.min(4,zoom*1.35);layout();});
+btn('zo',function(){zoom=Math.max(1,zoom/1.35);if(zoom<1.02){zoom=1;px=0;py=0;}layout();});
+btn('rt',function(){rotMode=(rotMode+1)%3;px=0;py=0;layout();});
+var de=document.documentElement;
+if(!(de.requestFullscreen||de.webkitRequestFullscreen))document.getElementById('fs').style.display='none';   // e.g. iPhone Safari
+btn('fs',function(){
   var inFs=document.fullscreenElement||document.webkitFullscreenElement;
   if(inFs){if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen();}
   else{if(de.requestFullscreen)de.requestFullscreen();else if(de.webkitRequestFullscreen)de.webkitRequestFullscreen();}
   setTimeout(layout,300);
-};
+});
 document.addEventListener('fullscreenchange',function(){setTimeout(layout,200);});
-document.getElementById('zi').onclick=function(){zoom=Math.min(4,zoom*1.35);layout();};
-document.getElementById('zo').onclick=function(){zoom=Math.max(1,zoom/1.35);if(zoom<1.02){zoom=1;px=0;py=0;}layout();};
-document.getElementById('rt').onclick=function(){rotMode=(rotMode+1)%3;px=0;py=0;layout();};
 </script></body></html>
 )HTML";
 
@@ -174,6 +192,15 @@ RemoteServer::RemoteServer(QWidget *baseWindow, QWidget *ignoreWindow, QObject *
     clock.start();
     lastGrab.start();
     connect(&server, &QTcpServer::newConnection, this, &RemoteServer::onNewConnection);
+
+    // close connections that were idle for a while
+    idleTimer.setInterval(5000);
+    connect(&idleTimer, &QTimer::timeout, this, [this]() {
+        const QList<QTcpSocket *> socks = findChildren<QTcpSocket *>();
+        for (QTcpSocket *s : socks)
+            if (clock.elapsed() - s->property("last").toLongLong() > 20000)
+                s->abort();
+    });
 }
 
 RemoteServer::~RemoteServer()
@@ -229,13 +256,17 @@ bool RemoteServer::start(const QString &ip)
     for (quint16 p = 8765; p < 8775; p++)
     {
         if (server.listen(QHostAddress::AnyIPv4, p))
+        {
+            idleTimer.start();
             return true;
+        }
     }
     return false;
 }
 
 void RemoteServer::stop()
 {
+    idleTimer.stop();
     if (server.isListening())
         server.close();
 
@@ -290,79 +321,78 @@ void RemoteServer::onNewConnection()
     {
         QTcpSocket *s = server.nextPendingConnection();
         s->setParent(this);
+        s->setSocketOption(QAbstractSocket::LowDelayOption, 1);   // no Nagle delay
+        s->setProperty("last", clock.elapsed());
 
         connect(s, &QTcpSocket::readyRead, this, [this, s]() { onReadyRead(s); });
         connect(s, &QTcpSocket::disconnected, s, &QObject::deleteLater);
-
-        // never keep a half-open connection around
-        QTimer::singleShot(8000, s, [s]() {
-            if (s->state() != QAbstractSocket::UnconnectedState)
-                s->abort();
-        });
     }
 }
 
 void RemoteServer::onReadyRead(QTcpSocket *s)
 {
+    s->setProperty("last", clock.elapsed());
+
     QByteArray buf = s->property("buf").toByteArray();
     buf += s->readAll();
 
-    if (buf.size() > kMaxRequest)
+    // keep-alive: one socket may carry many requests
+    while (!buf.isEmpty())
     {
-        s->abort();
-        return;
+        if (buf.size() > kMaxRequest * 2)
+        {
+            s->abort();
+            return;
+        }
+
+        int headEnd = buf.indexOf("\r\n\r\n");
+        if (headEnd < 0)
+            break;                                  // wait for the rest
+
+        QByteArray head = buf.left(headEnd);
+        QList<QByteArray> lines = head.split('\n');
+        QList<QByteArray> reqLine = lines.value(0).trimmed().split(' ');
+        if (reqLine.size() < 2)
+        {
+            s->abort();
+            return;
+        }
+
+        int contentLength = 0;
+        for (int i = 1; i < lines.size(); i++)
+        {
+            QByteArray l = lines[i].trimmed();
+            if (l.toLower().startsWith("content-length:"))
+                contentLength = l.mid(15).trimmed().toInt();
+        }
+
+        if (contentLength < 0 || contentLength > kMaxRequest)
+        {
+            s->abort();
+            return;
+        }
+
+        int total = headEnd + 4 + contentLength;
+        if (buf.size() < total)
+            break;                                  // body not complete yet
+
+        QByteArray body = buf.mid(headEnd + 4, contentLength);
+        buf.remove(0, total);
+
+        QByteArray target = reqLine[1];
+        QByteArray path = target;
+        QByteArray query;
+        int q = target.indexOf('?');
+        if (q >= 0)
+        {
+            path = target.left(q);
+            query = target.mid(q + 1);
+        }
+
+        handle(s, reqLine[0], QString::fromLatin1(path), query, body);
     }
 
-    int headEnd = buf.indexOf("\r\n\r\n");
-    if (headEnd < 0)
-    {
-        s->setProperty("buf", buf);
-        return;
-    }
-
-    QByteArray head = buf.left(headEnd);
-    QList<QByteArray> lines = head.split('\n');
-    QList<QByteArray> reqLine = lines.value(0).trimmed().split(' ');
-    if (reqLine.size() < 2)
-    {
-        s->abort();
-        return;
-    }
-
-    int contentLength = 0;
-    for (int i = 1; i < lines.size(); i++)
-    {
-        QByteArray l = lines[i].trimmed();
-        if (l.toLower().startsWith("content-length:"))
-            contentLength = l.mid(15).trimmed().toInt();
-    }
-
-    if (contentLength < 0 || contentLength > kMaxRequest)
-    {
-        s->abort();
-        return;
-    }
-
-    QByteArray body = buf.mid(headEnd + 4);
-    if (body.size() < contentLength)
-    {
-        s->setProperty("buf", buf);
-        return;
-    }
-    body = body.left(contentLength);
-    s->setProperty("buf", QByteArray());
-
-    QByteArray target = reqLine[1];
-    QByteArray path = target;
-    QByteArray query;
-    int q = target.indexOf('?');
-    if (q >= 0)
-    {
-        path = target.left(q);
-        query = target.mid(q + 1);
-    }
-
-    handle(s, reqLine[0], QString::fromLatin1(path), query, body);
+    s->setProperty("buf", buf);
 }
 
 void RemoteServer::reply(QTcpSocket *s, int code, const QByteArray &contentType,
@@ -380,14 +410,13 @@ void RemoteServer::reply(QTcpSocket *s, int code, const QByteArray &contentType,
     out += "Content-Type: " + contentType + "\r\n";
     out += "Content-Length: " + QByteArray::number(body.size()) + "\r\n";
     out += "Cache-Control: no-store\r\n";
-    out += "Connection: close\r\n";
+    out += "Connection: keep-alive\r\nKeep-Alive: timeout=15\r\n";
     out += "Access-Control-Expose-Headers: X-H\r\n";
     out += extraHeaders;
     out += "\r\n";
     out += body;
 
     s->write(out);
-    s->disconnectFromHost();
 }
 
 void RemoteServer::handle(QTcpSocket *s, const QByteArray &method, const QString &path,

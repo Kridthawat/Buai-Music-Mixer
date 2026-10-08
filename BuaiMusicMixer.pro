@@ -299,3 +299,6 @@ RESOURCES += \
 
 DISTFILES += \
     resources.rc
+
+# VST3 SDK (CoCreateGuid)
+win32: LIBS += -lole32 -luser32

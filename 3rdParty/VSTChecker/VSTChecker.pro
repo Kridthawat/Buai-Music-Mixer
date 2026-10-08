@@ -25,7 +25,7 @@ SOURCES += main.cpp \
 HEADERS += $$PWD/../../Vst3/Vst3Host.h
 
 INCLUDEPATH += $$PWD/../.. $$PWD/../vst3sdk
-win32: LIBS += -lshell32 -luser32
+win32: LIBS += -lshell32 -luser32 -lole32
 
 win32 {
     contains(QT_ARCH, i386) {

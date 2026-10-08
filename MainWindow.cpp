@@ -1484,8 +1484,9 @@ void MainWindow::saveConfigFile()
     synthMix->settingValues();
     settings->sync();
 
+    QDir().mkpath(Config::CONFIG_DIR_PATH);   // dialog opens in the config folder itself
     QString file = QFileDialog::getSaveFileName(synthMix, tr("บันทึกคอนฟิก"),
-                        QDir::homePath() + "/BuaiMusicMixer.bmcfg",
+                        QDir(Config::CONFIG_DIR_PATH).absoluteFilePath("BuaiMusicMixer.bmcfg"),
                         tr("Buai Mixer config (*.bmcfg)"));
     if (file.isEmpty())
         return;
@@ -1512,7 +1513,7 @@ void MainWindow::saveConfigFile()
 void MainWindow::openConfigFile()
 {
     QString file = QFileDialog::getOpenFileName(synthMix, tr("เปิดคอนฟิก"),
-                        QDir::homePath(), tr("Buai Mixer config (*.bmcfg)"));
+                        Config::CONFIG_DIR_PATH, tr("Buai Mixer config (*.bmcfg)"));
     if (file.isEmpty())
         return;
 

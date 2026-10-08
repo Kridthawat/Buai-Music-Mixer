@@ -1739,7 +1739,7 @@ void MainWindow::showRemoteDialog()
     }
 
     if (!remoteServer)
-        remoteServer = new RemoteServer(this, this);
+        remoteServer = new RemoteServer(synthMix, this, this);
 
     RemoteDialog *dlg = new RemoteDialog(remoteServer, dialogParent());
     dlg->adjustSize();

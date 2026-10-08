@@ -16,7 +16,7 @@
 #include <QWheelEvent>
 
 static const int    kMaxRequest  = 64 * 1024;
-static const int    kMaxFrameW   = 1000;
+static const int    kMaxFrameW   = 1600;
 static const qint64 kClientAlive = 4000;
 
 static const char *kPage = R"HTML(<!doctype html>
@@ -26,20 +26,36 @@ static const char *kPage = R"HTML(<!doctype html>
 <title>Buai Music Mixer</title>
 <style>
 html,body{margin:0;height:100%;background:#07080d;color:#7dffc0;font:13px sans-serif;overflow:hidden;touch-action:none;overscroll-behavior:none}
-#wrap{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center}
-#s{max-width:100%;max-height:100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+#s{position:absolute;left:0;top:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;max-width:none}
 #msg{position:fixed;left:0;right:0;top:0;text-align:center;padding:6px;background:rgba(0,0,0,.75);display:none;z-index:3}
-#bar{position:fixed;right:6px;bottom:6px;display:flex;gap:6px;z-index:2;opacity:.75}
-button{background:#14202a;color:#7dffc0;border:1px solid #1f5a45;border-radius:8px;padding:8px 12px;font-size:13px}
+#bar{position:fixed;right:6px;bottom:6px;display:flex;gap:6px;z-index:2;opacity:.7}
+button{background:#14202a;color:#7dffc0;border:1px solid #1f5a45;border-radius:8px;padding:8px 12px;font-size:14px;min-width:40px}
 </style></head><body>
 <div id="msg"></div>
-<div id="wrap"><img id="s" alt=""></div>
-<div id="bar"><button id="esc">Esc</button><button id="fs">&#9974;</button></div>
+<img id="s" alt="">
+<div id="bar"><button id="zo">&minus;</button><button id="zi">+</button><button id="rt">&#10227;</button><button id="esc">Esc</button><button id="fs">&#9974;</button></div>
 <script>
 var T=new URLSearchParams(location.search).get('t')||'';
 var img=document.getElementById('s'),msg=document.getElementById('msg');
 var h='',fails=0,dead=false;
+var rotMode=0,zoom=1,px=0,py=0,ROT=false;
 function say(t){if(t){msg.textContent=t;msg.style.display='block';}else{msg.style.display='none';}}
+function layout(){
+  var iw=img.naturalWidth,ih=img.naturalHeight;if(!iw||!ih)return;
+  var vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;
+  var rot=(rotMode==1)||(rotMode==0&&vh>vw&&iw>ih*1.15);
+  var bw=rot?ih:iw,bh=rot?iw:ih;
+  var s=Math.min(vw/bw,vh/bh)*zoom;
+  var w=iw*s,hh=ih*s,W=rot?hh:w,H=rot?w:hh;
+  var mx=Math.max(0,(W-vw)/2),my=Math.max(0,(H-vh)/2);
+  px=Math.max(-mx,Math.min(mx,px));py=Math.max(-my,Math.min(my,py));
+  img.style.width=w+'px';img.style.height=hh+'px';
+  img.style.left=((vw-w)/2+px)+'px';img.style.top=((vh-hh)/2+py)+'px';
+  img.style.transform=rot?'rotate(90deg)':'none';
+  ROT=rot;
+}
+window.addEventListener('resize',layout);
+window.addEventListener('orientationchange',function(){setTimeout(layout,200);});
 function loop(){
   if(dead)return;
   fetch('/f?t='+encodeURIComponent(T)+'&h='+h,{cache:'no-store'}).then(function(r){
@@ -48,7 +64,7 @@ function loop(){
       h=r.headers.get('X-H')||'';
       return r.blob().then(function(b){
         var u=URL.createObjectURL(b),old=img.src;
-        img.onload=function(){if(old&&old.indexOf('blob:')==0)URL.revokeObjectURL(old);};
+        img.onload=function(){if(old&&old.indexOf('blob:')==0)URL.revokeObjectURL(old);layout();};
         img.src=u;
       });
     }
@@ -72,17 +88,23 @@ function send(o){
 }
 function pos(e){
   var r=img.getBoundingClientRect();
-  var x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+  var dx=e.clientX-r.left,dy=e.clientY-r.top,x,y;
+  if(!ROT){x=dx/r.width;y=dy/r.height;}else{x=dy/r.height;y=1-dx/r.width;}
   return {x:Math.max(0,Math.min(1,x)),y:Math.max(0,Math.min(1,y))};
 }
-var pts={},n=0,down=false,last=null,sy=0,acc=0;
+var pts={},n=0,down=false,last=null,cx=0,cy=0,acc=0;
+function centroid(){
+  var k=Object.keys(pts),sx=0,sy=0;
+  for(var i=0;i<k.length;i++){sx+=pts[k[i]].clientX;sy+=pts[k[i]].clientY;}
+  return {x:sx/k.length,y:sy/k.length};
+}
 img.addEventListener('pointerdown',function(e){
   e.preventDefault();img.setPointerCapture(e.pointerId);
   pts[e.pointerId]=e;n=Object.keys(pts).length;
   if(n==1){var p=pos(e);last=p;down=true;send({type:'down',x:p.x,y:p.y});}
   else if(n==2){
-    if(down){send({type:'up',x:last.x,y:last.y});down=false;}
-    var k=Object.keys(pts);sy=(pts[k[0]].clientY+pts[k[1]].clientY)/2;acc=0;
+    if(down){send({type:'cancel',x:last.x,y:last.y});down=false;}
+    var c=centroid();cx=c.x;cy=c.y;acc=0;
   }
 });
 img.addEventListener('pointermove',function(e){
@@ -90,9 +112,12 @@ img.addEventListener('pointermove',function(e){
   e.preventDefault();pts[e.pointerId]=e;
   if(n==1&&down){var p=pos(e);last=p;send({type:'move',x:p.x,y:p.y});}
   else if(n==2){
-    var k=Object.keys(pts);var cy=(pts[k[0]].clientY+pts[k[1]].clientY)/2;
-    acc+=cy-sy;sy=cy;
-    if(Math.abs(acc)>10){var p2=pos(pts[k[0]]);send({type:'wheel',x:p2.x,y:p2.y,dy:Math.round(acc)});acc=0;}
+    var c=centroid(),dx=c.x-cx,dy=c.y-cy;cx=c.x;cy=c.y;
+    if(zoom>1.01){px+=dx;py+=dy;layout();}
+    else{
+      acc+=ROT?-dx:dy;
+      if(Math.abs(acc)>10){var p2=pos(c);send({type:'wheel',x:p2.x,y:p2.y,dy:Math.round(acc)});acc=0;}
+    }
   }
 });
 function end(e){
@@ -107,6 +132,9 @@ img.addEventListener('pointercancel',end);
 img.addEventListener('contextmenu',function(e){e.preventDefault();});
 document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
 document.getElementById('esc').onclick=function(){send({type:'key',key:'esc'});};
+document.getElementById('zi').onclick=function(){zoom=Math.min(4,zoom*1.35);layout();};
+document.getElementById('zo').onclick=function(){zoom=Math.max(1,zoom/1.35);if(zoom<1.02){zoom=1;px=0;py=0;}layout();};
+document.getElementById('rt').onclick=function(){rotMode=(rotMode+1)%3;px=0;py=0;layout();};
 document.getElementById('fs').onclick=function(){
   var d=document.documentElement;
   if(d.requestFullscreen)d.requestFullscreen();else if(d.webkitRequestFullscreen)d.webkitRequestFullscreen();
@@ -116,8 +144,8 @@ document.getElementById('fs').onclick=function(){
 
 // ---------------------------------------------------------------------------
 
-RemoteServer::RemoteServer(QWidget *mainWindow, QObject *parent)
-    : QObject(parent), mainWin(mainWindow)
+RemoteServer::RemoteServer(QWidget *baseWindow, QWidget *ignoreWindow, QObject *parent)
+    : QObject(parent), mainWin(baseWindow), ignoreWin(ignoreWindow)
 {
     clock.start();
     lastGrab.start();
@@ -390,8 +418,10 @@ void RemoteServer::handle(QTcpSocket *s, const QByteArray &method, const QString
         for (const QPair<QString, QString> &it : items)
             p.insert(it.first, it.second);
 
-        inject(p);
+        // answer first: an injected click may open a modal dialog (e.g. the exit
+        // question) whose nested event loop would otherwise block this reply
         reply(s, 200, "text/plain", "ok");
+        QTimer::singleShot(0, this, [this, p]() { inject(p); });
         return;
     }
 
@@ -411,7 +441,8 @@ QWidget *RemoteServer::targetWindow() const
             return w;
 
     QWidget *a = QApplication::activeWindow();
-    if (a && a->isVisible() && !a->isMinimized() && !a->property("buaiRemoteSkip").toBool())
+    if (a && a != ignoreWin && a->isVisible() && !a->isMinimized() &&
+        !a->property("buaiRemoteSkip").toBool())
         return a;
 
     return mainWin;
@@ -423,7 +454,10 @@ bool RemoteServer::grabFrame()
     if (!lastJpeg.isEmpty() && lastGrab.elapsed() < 40)
         return true;
 
-    QWidget *w = dragWindow ? dragWindow.data() : targetWindow();
+    // an open popup menu is always shown, even while a press is still in progress
+    QWidget *w = QApplication::activePopupWidget();
+    if (!w)
+        w = dragWindow ? dragWindow.data() : targetWindow();
     if (!w || w->width() < 2 || w->height() < 2)
         return false;
 
@@ -449,7 +483,7 @@ bool RemoteServer::grabFrame()
     QByteArray jpg;
     QBuffer buf(&jpg);
     buf.open(QIODevice::WriteOnly);
-    img.save(&buf, "JPEG", 62);
+    img.save(&buf, "JPEG", 70);
 
     lastJpeg = jpg;
     lastHash = hash;
@@ -522,19 +556,26 @@ void RemoteServer::inject(const QMap<QString, QString> &p)
                        Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
         QApplication::sendEvent(pressWidget.data(), &ev);
     }
-    else if (type == "up")
+    else if (type == "up" || type == "cancel")
     {
-        if (pressWidget)
+        QWidget *pw = pressWidget.data();
+        QWidget *pwin = win;
+        if (pw)
         {
-            QWidget *pw = pressWidget.data();
-            QPoint lp = pw->mapFrom(win, wp);
+            // cancel: release far outside the widget, so buttons do not "click"
+            QPoint lp = (type == "cancel") ? QPoint(-5000, -5000) : pw->mapFrom(win, wp);
             QPoint gp = win->mapToGlobal(wp);
             QMouseEvent ev(QEvent::MouseButtonRelease, QPointF(lp), QPointF(gp),
                            Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
-            QApplication::sendEvent(pw, &ev);
+            QApplication::sendEvent(pw, &ev);        // may run a nested event loop
         }
-        pressWidget = nullptr;
-        dragWindow = nullptr;
+        // a new press may have started meanwhile (inside that nested loop)
+        if (pressWidget.data() == pw)
+        {
+            pressWidget = nullptr;
+            dragWindow = nullptr;
+        }
+        Q_UNUSED(pwin);
     }
     else if (type == "wheel")
     {

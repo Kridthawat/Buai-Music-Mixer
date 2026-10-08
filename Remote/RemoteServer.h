@@ -20,7 +20,9 @@ class RemoteServer : public QObject
     Q_OBJECT
 
 public:
-    explicit RemoteServer(QWidget *mainWindow, QObject *parent = nullptr);
+    // baseWindow: the window that is mirrored by default (the mixer);
+    // ignoreWindow: never mirrored (the hidden lyrics main window)
+    RemoteServer(QWidget *baseWindow, QWidget *ignoreWindow, QObject *parent = nullptr);
     ~RemoteServer();
 
     bool start(const QString &ip);      // tries port 8765.. (10 ports)
@@ -53,6 +55,7 @@ private:
     void touchClient(const QString &ip);
 
     QWidget     *mainWin;
+    QWidget     *ignoreWin;
     QTcpServer   server;
     QString      ipText;
     QString      token;

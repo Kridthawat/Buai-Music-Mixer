@@ -3,17 +3,35 @@
 #include <QShowEvent>
 #include <QCloseEvent>
 #include <QHideEvent>
+#include <QTimer>
+#include <QPointer>
+#include <QStandardPaths>
+#include <QFile>
+#include <QDateTime>
+#include <QTextStream>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
+
+static void vstLog(const QString &msg)
+{
+    QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (dir.isEmpty()) return;
+    QFile f(dir + "/vst_embed.log");
+    if (f.size() > 200000) f.remove();
+    if (f.open(QIODevice::Append | QIODevice::Text))
+        QTextStream(&f) << QDateTime::currentDateTime().toString("hh:mm:ss.zzz ") << msg << "\n";
+}
 
 VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) : QDialog(parent)
 {
     this->fxHandle = fxHandle;
 
-    // The plug-in editor lives in its own native child widget (host) below the
-    // themed title bar; a 1px margin keeps the neon frame outline visible around it.
-    setContentsMargins(2, 0, 2, 6);   // bottom room keeps the rounded corners clear of the plug-in
-    host = new QWidget(this);
-    host->setAttribute(Qt::WA_NativeWindow);
-    host->setAttribute(Qt::WA_DontCreateNativeAncestors);
+    // Plug-in editors keep the plain native Windows frame (no neon skin): the plug-in draws
+    // its own GUI straight into this window, exactly like in other hosts.
+    setProperty("buaiNoSkin", true);
+    setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowSystemMenuHint |
+                   Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
 
     BASS_VST_INFO info;
     if (bv::GetInfo(fxHandle, &info) && info.hasEditor)
@@ -25,10 +43,7 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
         setWindowTitle(name + "  [" + instName + "]");
         edW = info.editorWidth;
         edH = info.editorHeight;
-        host->resize(edW, edH);
-        setFixedSize(edW + 4, edH + 6);
-        setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
-        setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
+        setFixedSize(edW, edH);
 
         canOpen = true;
     }
@@ -37,13 +52,52 @@ VSTDialog::VSTDialog(QWidget *parent, DWORD fxHandle, const QString &instName) :
 void VSTDialog::showEvent(QShowEvent *event)
 {
     if (!attached) {
-        QMargins m = contentsMargins();      // the skin adds the title bar height on top
-        host->setGeometry(m.left(), m.top(), edW, edH);
         bv::EmbedEditor(fxHandle, NULL);   // make sure no stale embed remains
-        bv::EmbedEditor(fxHandle, (HWND)host->winId());
+        embedNow();
         attached = true;
+        // Some plug-ins (32-bit ones especially) create their editor window but never paint it
+        // into a freshly created parent; verify shortly after and re-embed / repaint if needed.
+        QPointer<VSTDialog> self(this);
+        QTimer::singleShot(150, this, [self]() { if (self && self->attached) self->verifyEmbed(1); });
     }
     event->accept();
+}
+
+void VSTDialog::embedNow()
+{
+#ifdef Q_OS_WIN
+    HWND h = (HWND)winId();
+    LONG_PTR st = GetWindowLongPtr(h, GWL_STYLE);
+    SetWindowLongPtr(h, GWL_STYLE, st | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+    BOOL ok = bv::EmbedEditor(fxHandle, h);
+    vstLog(QString("embed fx=%1 host=%2 ok=%3 size=%4x%5 dpr=%6")
+           .arg(fxHandle).arg((quintptr)h).arg(ok).arg(edW).arg(edH).arg(devicePixelRatioF()));
+#else
+    bv::EmbedEditor(fxHandle, (HWND)winId());
+#endif
+}
+
+void VSTDialog::verifyEmbed(int attempt)
+{
+#ifdef Q_OS_WIN
+    HWND h = (HWND)winId();
+    HWND child = GetWindow(h, GW_CHILD);
+    vstLog(QString("verify attempt=%1 child=%2 visible=%3").arg(attempt).arg((quintptr)child)
+           .arg(child ? IsWindowVisible(child) : 0));
+    if (!child && attempt < 4) {
+        bv::EmbedEditor(fxHandle, NULL);
+        embedNow();
+        QPointer<VSTDialog> self(this);
+        QTimer::singleShot(250, this, [self, attempt]() { if (self && self->attached) self->verifyEmbed(attempt + 1); });
+        return;
+    }
+    if (child) {
+        ShowWindow(child, SW_SHOW);
+        RedrawWindow(child, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_FRAME);
+    }
+#else
+    Q_UNUSED(attempt)
+#endif
 }
 
 void VSTDialog::detachEditor()

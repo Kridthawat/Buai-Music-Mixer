@@ -29,8 +29,9 @@ protected:
 
 private:
     void detachEditor();
+    void embedNow();
+    void verifyEmbed(int attempt);
     bool attached = false;
-    QWidget *host = nullptr;
     int edW = 0, edH = 0;
     DWORD fxHandle;
     bool canOpen = false;
